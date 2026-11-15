@@ -1,10 +1,10 @@
+import { Page } from '../components/Page.tsx'
 import { tr } from '../i18n/index.ts'
 
 export function BildirimlerPage() {
   return (
-    <section>
-      <h1>{tr.nav.bildirimler}</h1>
+    <Page title={tr.nav.bildirimler}>
       <p>{tr.placeholders.bildirimler}</p>
-    </section>
+    </Page>
   )
 }

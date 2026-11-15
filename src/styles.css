@@ -1,14 +1,185 @@
+/*
+  Mantıksal özellikler (margin-inline, padding-inline) sağdan sola
+  yazıda kendiliğinden döner. Kenar çentiği fizikseldir: soldaki çentik
+  RTL olsa da solda kalır. Bu yüzden yalnızca safe-area için left/right var.
+  iPhone çentiğinde boşluğun gerçekten açıldığı TODO-VERIFY (ASSUMPTIONS.md).
+*/
 :root {
-  color: #1c1917;
-  background: #fafaf9;
+  color-scheme: light;
+  --bg: #f6f3ee;
+  --surface: #fffcf8;
+  --text: #1c1917;
+  --muted: #57534e;
+  --accent: #0f766e;
+  --on-accent: #f0fdfa;
+  --border: #e7e5e4;
+  --focus: #0f766e;
   font-family: system-ui, sans-serif;
-  line-height: 1.5;
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #1c1917;
+    --surface: #292524;
+    --text: #fafaf9;
+    --muted: #a8a29e;
+    --accent: #2dd4bf;
+    --on-accent: #042f2e;
+    --border: #44403c;
+    --focus: #5eead4;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
 }
 
 body {
   margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
 }
 
 a {
-  color: #0f766e;
+  color: var(--accent);
+}
+
+.app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  background: var(--surface);
+  border-block-end: 1px solid var(--border);
+  padding-block-start: calc(0.75rem + env(safe-area-inset-top, 0px));
+  padding-block-end: 0.75rem;
+  padding-inline-start: max(1rem, env(safe-area-inset-left, 0px));
+  padding-inline-end: max(1rem, env(safe-area-inset-right, 0px));
+}
+
+.app-name {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.phase-note {
+  margin-block: 0.25rem 0;
+  margin-inline: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+main {
+  flex: 1;
+  padding-block-start: 1rem;
+  /* Alt menü sabit. İçerik onun altında kalmasın. */
+  padding-block-end: calc(9.5rem + env(safe-area-inset-bottom, 0px));
+  padding-inline-start: max(1rem, env(safe-area-inset-left, 0px));
+  padding-inline-end: max(1rem, env(safe-area-inset-right, 0px));
+}
+
+.page h1 {
+  margin-block: 0 0.75rem;
+  margin-inline: 0;
+  font-size: 1.5rem;
+}
+
+.page p {
+  margin-block: 0;
+  margin-inline: 0;
+}
+
+.tabbar {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-end: 0;
+  background: var(--surface);
+  border-block-start: 1px solid var(--border);
+  padding-block-start: 0.5rem;
+  padding-block-end: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  padding-inline-start: max(0.5rem, env(safe-area-inset-left, 0px));
+  padding-inline-end: max(0.5rem, env(safe-area-inset-right, 0px));
+}
+
+.tabbar ul {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tabbar a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 48px;
+  padding-block: 0.35rem;
+  padding-inline: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.tabbar a[aria-current='page'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.tabbar a:focus-visible,
+.button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Sonraki ekranlardaki düğmeler en az 48px olsun. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 48px;
+  margin: 0;
+  padding-block: 0.5rem;
+  padding-inline: 1rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+  text-align: center;
 }

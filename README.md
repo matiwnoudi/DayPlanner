@@ -1,6 +1,6 @@
 # Rutin Test (Phase 0.5)
 
-Bu, iPhone ana ekranına eklenecek bir hatırlatma uygulamasının **deneme** sürümüdür. Henüz hatırlatma, bildirim veya çevrimdışı çalışma yok. Bu adımda yalnızca boş sayfalar ve proje iskeleti var.
+Bu, iPhone ana ekranına eklenecek bir hatırlatma uygulamasının **deneme** sürümüdür. Henüz hatırlatma, bildirim veya çevrimdışı çalışma yok. Sayfalar boş; görünüm telefona göre ayarlandı.
 
 ## Bu bilgisayarda gerekenler
 
@@ -62,6 +62,14 @@ Copy-Item .env.example .env
 
 `.env` dosyası git’e girmez. Gizli anahtar yalnızca `.env` içine yazılır.
 
+## Görünüm
+
+Uygulama dar ekrana göre çizilir. Altta 6 büyük düğme vardır. Yazı rengi, telefonun veya Windows’un açık/koyu ayarını izler (`prefers-color-scheme`).
+
+Boşluklar `margin-inline` gibi mantıksal özelliklerle yazıldı. İleride Farsça ve sağdan sola düzen eklendiğinde satırlar ters döner. Şu an sayfa `dir="ltr"` (soldan sağa).
+
+iPhone’da çentik ve alt çizgi için `viewport-fit=cover` ve `safe-area` boşluğu var. Bu boşluk gerçek telefonda henüz denenmedi.
+
 ## Henüz yapılmayanlar
 
-iPhone’a ekleme, çevrimdışı açılma ve yayın adımları sonraki adımda anlatılacak. Bu adımda uygulamayı iPhone’da denemeyin; henüz ana ekran uygulaması değil.
+iPhone’a ekleme, çevrimdışı açılma ve yayın sonraki adımlarda. Bu halde uygulamayı ana ekrana eklemeyin; henüz ana ekran uygulaması değil.

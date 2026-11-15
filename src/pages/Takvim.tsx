@@ -1,10 +1,10 @@
+import { Page } from '../components/Page.tsx'
 import { tr } from '../i18n/index.ts'
 
 export function TakvimPage() {
   return (
-    <section>
-      <h1>{tr.nav.takvim}</h1>
+    <Page title={tr.nav.takvim}>
       <p>{tr.placeholders.takvim}</p>
-    </section>
+    </Page>
   )
 }

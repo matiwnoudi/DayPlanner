@@ -1,6 +1,6 @@
 export const tr = {
   appName: 'Rutin Test',
-  phaseNote: 'Deneme uygulaması. Bu adımda sayfalar henüz boş.',
+  phaseNote: 'Deneme uygulaması. Sayfa içeriği sonraki adımlarda gelecek.',
   navLabel: 'Sayfalar',
   nav: {
     kurulum: 'Kurulum',

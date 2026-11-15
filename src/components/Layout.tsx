@@ -13,14 +13,14 @@ const links = [
 export function Layout() {
   return (
     <div className="app">
-      <header>
+      <header className="topbar">
         <p className="app-name">{tr.appName}</p>
-        <p>{tr.phaseNote}</p>
+        <p className="phase-note">{tr.phaseNote}</p>
       </header>
       <main>
         <Outlet />
       </main>
-      <nav aria-label={tr.navLabel}>
+      <nav className="tabbar" aria-label={tr.navLabel}>
         <ul>
           {links.map((link) => (
             <li key={link.to}>

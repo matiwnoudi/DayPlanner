@@ -1,10 +1,10 @@
+import { Page } from '../components/Page.tsx'
 import { tr } from '../i18n/index.ts'
 
 export function GunlukPage() {
   return (
-    <section>
-      <h1>{tr.nav.gunluk}</h1>
+    <Page title={tr.nav.gunluk}>
       <p>{tr.placeholders.gunluk}</p>
-    </section>
+    </Page>
   )
 }
