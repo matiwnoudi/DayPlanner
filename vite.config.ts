@@ -1,5 +1,6 @@
-import react from '@vitejs/plugin-react'
-import { defineConfig, loadEnv } from 'vite'
+import react from '@vitejs/plugin-react';
+import { defineConfig, loadEnv } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
 
 /**
  * GitHub Pages siteyi /depo-adi/ gibi bir alt yoldan sunar.
@@ -16,9 +17,62 @@ function normalizeBase(value: string | undefined): string {
 }
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
+  const env = loadEnv(mode, process.cwd(), '');
+  const base = normalizeBase(env.VITE_BASE);
+
   return {
-    base: normalizeBase(env.VITE_BASE),
-    plugins: [react()],
-  }
-})
+    base,
+    plugins: [
+      react(),
+      VitePWA({
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw.ts',
+        registerType: 'prompt',
+        injectRegister: false,
+
+        // Dev sunucusunda service worker kapalı
+        devOptions: {
+          enabled: false,
+        },
+
+        // Manifest içeriği
+        manifest: {
+          name: 'Rutin Test',
+          short_name: 'Rutin Test',
+          description: 'Hatırlatma ve rutin asistanı test uygulaması',
+          lang: 'tr',
+          start_url: base,
+          scope: base,
+          id: base,
+          display: 'standalone',
+          theme_color: '#3b82f6',
+          background_color: '#ffffff',
+          icons: [
+            {
+              src: 'icon-192.png',
+              sizes: '192x192',
+              type: 'image/png',
+            },
+            {
+              src: 'icon-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+            },
+            {
+              src: 'icon-512-maskable.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable',
+            },
+          ],
+        },
+
+        // Workbox seçenekleri
+        injectManifest: {
+          injectionPoint: undefined,
+        },
+      }),
+    ],
+  };
+});

@@ -183,3 +183,85 @@ main {
   font-weight: 700;
   text-align: center;
 }
+
+/* ============================================================================
+   UPDATE PROMPT
+   ============================================================================ */
+
+.update-prompt {
+  position: fixed;
+  bottom: var(--safe-area-inset-bottom, 0);
+  left: 0;
+  right: 0;
+  padding: 1rem;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.update-prompt-content {
+  background: var(--bg-secondary);
+  color: var(--fg-primary);
+  padding: 1rem 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-width: 400px;
+  width: 100%;
+  border: 1px solid var(--border-color);
+}
+
+.update-prompt-content p {
+  margin: 0 0 1rem 0;
+  font-weight: 500;
+  text-align: center;
+}
+
+.update-prompt-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.update-prompt button {
+  padding: 0.5rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 80px;
+  min-height: 44px;
+}
+
+.btn-primary {
+  background: var(--accent-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--bg-primary);
+  color: var(--fg-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-secondary);
+}
