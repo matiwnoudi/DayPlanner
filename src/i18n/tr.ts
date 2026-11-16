@@ -18,6 +18,71 @@ export const tr = {
     takvim: 'Takvim dosyası dışa aktarma bu sayfaya gelecek.',
     kontrol: 'Elle doldurulan test listesi bu sayfaya gelecek.',
   },
-} as const
+  kurulum: {
+    title: 'Kurulum',
+    notIPhone: 'Bu uygulama iPhone için tasarlandı.',
+    notIPhoneNote:
+      'Bilgisayardan test edebilirsin ama bildirimler gerçek iPhone\'da çalışacak.',
+    needSafari: 'Bu sayfayı Safari\'de açman gerekiyor',
+    needSafariNote:
+      'Ana ekrana eklemek için Safari kullanılmalı. Aşağıdaki adımları izle:',
+    needSafariStep1: 'Bu sayfanın adresini kopyala',
+    needSafariStep2: 'Safari\'yi aç',
+    needSafariStep3: 'Adresi yapıştır ve siteyi aç',
+    needSafariAlt:
+      'Ya da bu sayfayı açıkken menüden (⋯) "Safari\'de aç" seçeneğini kullan.',
+    copyUrl: 'Adresi kopyala',
+    urlCopied: 'Adres kopyalandı!',
+    installed: 'Kuruldu ✓',
+    installedNote: 'Uygulama ana ekrana eklendi ve ana ekran uygulaması olarak açık.',
+    continueToNotifications: 'Bildirimleri ayarlamaya devam et →',
+    installInstructions: {
+      title: 'Ana Ekrana Ekle',
+      intro: 'Uygulamayı ana ekranına eklemek için aşağıdaki adımları izle:',
+      step1: '1. Paylaş düğmesine dokun',
+      step1Icon: '(Altta ortada ↑ simgesi veya sağ üstte ⋯ menüsü)',
+      step1Note:
+        'iOS 26\'da Paylaş düğmesinin konumu değişmiş olabilir. Alt çubukta ↑ simgesini veya sağ üst köşede ⋯ menüsünü ara.',
+      step2: '2. "Ana Ekrana Ekle" seçeneğini bul',
+      step2Note: 'Aşağı kaydırman gerekebilir.',
+      step3: '3. "Ekle" düğmesine dokun',
+      step3Note:
+        '"Web uygulaması olarak aç" seçeneği varsa işaretle. Bu seçenek bazı iOS sürümlerinde görünmeyebilir.',
+      step4: '4. Ana ekrandan uygulamayı aç',
+      step4Note: 'Safari yerine tam ekran olarak açılacak.',
+    },
+    diagnostics: {
+      title: 'Cihaz Tanılama',
+      description: 'Teknik destek için bu bilgileri paylaşabilirsin.',
+      standalone: 'Ana ekran uygulaması olarak açık mı',
+      serviceWorker: 'Service Worker',
+      notification: 'Notification API',
+      pushManager: 'Push Manager',
+      persisted: 'Depolama kalıcı',
+      online: 'Çevrimiçi',
+      screenWidth: 'Ekran genişliği',
+      userAgent: 'User Agent',
+      timeZone: 'Saat dilimi',
+      notificationPermission: 'Notification izni',
+      appUrl: 'Yayın adresi',
+      appVersion: 'Uygulama sürümü',
+      iosVersion: 'iOS sürümü',
+      iosVersionNote: 'Ayarlar > Genel > Hakkında\'dan bakıp yaz',
+      copy: 'Kopyala',
+      copied: 'Kopyalandı!',
+      copyFailed: 'Kopyalama başarısız',
+      yes: 'Evet',
+      no: 'Hayır',
+      checking: 'Kontrol ediliyor...',
+    },
+    devPreview: {
+      title: '🔧 Durum Önizlemesi (Sadece Geliştirme)',
+      desktop: 'Masaüstü',
+      iosSafari: 'iOS + Safari (kurulu değil)',
+      iosNonSafari: 'iOS + Safari dışı tarayıcı',
+      iosStandalone: 'iOS + Standalone (kurulu)',
+    },
+  },
+} as const;
 
-export type Dictionary = typeof tr
+export type Dictionary = typeof tr;

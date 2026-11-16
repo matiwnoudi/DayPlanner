@@ -265,3 +265,263 @@ main {
 .btn-secondary:hover {
   background: var(--bg-secondary);
 }
+
+/* ============================================================================
+   KURULUM SAYFASI
+   ============================================================================ */
+
+/* Dev mode önizleme */
+.dev-preview {
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.dev-preview h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  color: #856404;
+}
+
+.dev-preview-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dev-preview-buttons button {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  border: 1px solid #856404;
+  background: white;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.dev-preview-buttons button:disabled {
+  background: #856404;
+  color: white;
+}
+
+/* Bilgi notları */
+.install-notice,
+.install-success {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.notice-emoji,
+.success-emoji {
+  font-size: 4rem;
+  margin: 0 0 1rem 0;
+}
+
+.install-notice h2,
+.install-success h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+}
+
+.install-notice p,
+.install-success p {
+  margin: 0.5rem 0;
+  color: var(--fg-secondary);
+}
+
+/* Kurulum talimatları */
+.install-instructions {
+  padding: 1rem 0;
+}
+
+.install-instructions h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+}
+
+.install-instructions > p {
+  margin: 0 0 1.5rem 0;
+  color: var(--fg-secondary);
+}
+
+.install-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.install-step {
+  background: var(--bg-secondary);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.step-content strong {
+  font-size: 1.125rem;
+  color: var(--fg-primary);
+}
+
+.step-note {
+  font-size: 0.875rem;
+  color: var(--fg-secondary);
+  margin: 0;
+}
+
+.step-warning {
+  font-size: 0.875rem;
+  color: var(--accent-color);
+  background: rgba(59, 130, 246, 0.1);
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  margin: 0;
+}
+
+.install-alt-note {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--fg-secondary);
+  margin-top: 1.5rem;
+}
+
+/* CSS ile çizilmiş paylaş simgesi */
+.share-icon-container {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.share-icon {
+  width: 60px;
+  height: 60px;
+  border: 3px solid var(--accent-color);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: var(--bg-primary);
+}
+
+.share-arrow {
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 20px solid var(--accent-color);
+  position: relative;
+}
+
+.share-arrow::after {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: -4px;
+  width: 8px;
+  height: 16px;
+  background: var(--accent-color);
+}
+
+/* CSS ile çizilmiş menü item */
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  font-size: 1rem;
+}
+
+.menu-icon {
+  font-size: 1.5rem;
+  color: var(--accent-color);
+}
+
+/* Başarı durumu */
+.install-success .btn-primary {
+  display: inline-block;
+  margin-top: 1.5rem;
+  padding: 0.75rem 2rem;
+  text-decoration: none;
+}
+
+/* Tanılama bölümü */
+.diagnostics-section {
+  margin-top: 2rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1.5rem;
+}
+
+.diagnostics-toggle {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--fg-primary);
+}
+
+.diagnostics-toggle:hover {
+  background: var(--bg-primary);
+}
+
+.diagnostics-content {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 0.5rem;
+}
+
+.diagnostics-description {
+  font-size: 0.875rem;
+  color: var(--fg-secondary);
+  margin: 0 0 1rem 0;
+}
+
+.diagnostics-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 1rem;
+  margin: 0 0 1rem 0;
+  font-size: 0.875rem;
+}
+
+.diagnostics-list dt {
+  font-weight: 500;
+  color: var(--fg-secondary);
+}
+
+.diagnostics-list dd {
+  margin: 0;
+  color: var(--fg-primary);
+  font-family: monospace;
+}
+
+.diagnostics-content .btn-secondary {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.copy-failed-note {
+  font-size: 0.75rem;
+  color: var(--fg-secondary);
+  text-align: center;
+  margin-top: 0.5rem;
+}
