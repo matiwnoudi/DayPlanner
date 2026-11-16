@@ -139,11 +139,12 @@ export function isSafariLike(userAgent: string): boolean {
 /**
  * iOS sürümünü userAgent'tan çıkarmaya çalış
  *
- * UYARI: Bu fonksiyon iOS sürümünü çıkarmaya çalışır ama güvenilir değildir.
- * Kullanıcıdan manuel olarak sormak daha doğrudur.
+ * ÖNEMLİ: Bu fonksiyon tahmini bir değer döndürür.
+ * UserAgent'tan çıkarılan sürüm kesin olmayabilir.
+ * Güvenilir iOS sürümü için kullanıcıdan manuel olarak sormak daha doğrudur.
  *
  * @param userAgent - navigator.userAgent değeri
- * @returns iOS sürümü veya null
+ * @returns iOS sürümü (yaklaşık) veya null
  */
 export function getIOSVersion(userAgent: string): string | null {
   if (!isIOS(userAgent)) {

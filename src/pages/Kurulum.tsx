@@ -13,6 +13,7 @@ import {
   isStandalone,
   isSafariLike,
   getDeviceInfo,
+  getIOSVersion,
   checkStoragePersisted,
   type DeviceInfo,
 } from '../lib/install';
@@ -51,12 +52,10 @@ export function KurulumPage() {
       }
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setInstallState(state);
+    setInstallState(state); // eslint-disable-line react-hooks/set-state-in-effect
 
     // Cihaz bilgilerini topla
     const info = getDeviceInfo(navigator, window, APP_VERSION);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDeviceInfo(info);
 
     // Storage persisted kontrolü (async)
@@ -289,7 +288,13 @@ User Agent: ${deviceInfo.userAgent}
                 <dd>{deviceInfo.appVersion}</dd>
 
                 <dt>{tr.kurulum.diagnostics.iosVersion}</dt>
-                <dd>{tr.kurulum.diagnostics.iosVersionNote}</dd>
+                <dd>
+                  {getIOSVersion(deviceInfo.userAgent) || 'Belirtilmemiş'}
+                  <br />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--fg-secondary)' }}>
+                    {tr.kurulum.diagnostics.iosVersionNote}
+                  </span>
+                </dd>
 
                 <dt>{tr.kurulum.diagnostics.userAgent}</dt>
                 <dd style={{ wordBreak: 'break-all', fontSize: '0.75rem' }}>

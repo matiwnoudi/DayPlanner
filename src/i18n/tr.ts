@@ -67,7 +67,7 @@ export const tr = {
       appUrl: 'Yayın adresi',
       appVersion: 'Uygulama sürümü',
       iosVersion: 'iOS sürümü',
-      iosVersionNote: 'Ayarlar > Genel > Hakkında\'dan bakıp yaz',
+      iosVersionNote: 'Ayarlar > Genel > Hakkında\'dan bakıp yaz (userAgent\'tan çıkarılan tahmini)',
       copy: 'Kopyala',
       copied: 'Kopyalandı!',
       copyFailed: 'Kopyalama başarısız',
