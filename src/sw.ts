@@ -27,7 +27,9 @@ precacheAndRoute(self.__WB_MANIFEST);
 // Ancak bazı durumlarda doğrudan /hatirlatmalar gibi bir URL açılabilir,
 // bu durumda index.html döndürmek gerekir
 
-const handler = createHandlerBoundToURL('/index.html');
+// Base-aware: GitHub Pages gibi alt yollar için doğru URL
+const indexUrl = new URL('./index.html', self.location.origin + import.meta.env.BASE_URL).href;
+const handler = createHandlerBoundToURL(indexUrl);
 const navigationRoute = new NavigationRoute(handler, {
   // Navigasyon isteklerini yakala
   denylist: [

@@ -68,10 +68,7 @@ export default defineConfig(({ mode }) => {
           ],
         },
 
-        // Workbox seçenekleri
-        injectManifest: {
-          injectionPoint: undefined,
-        },
+        // Workbox seçenekleri - injectionPoint varsayılan (self.__WB_MANIFEST) kullanılır
       }),
     ],
   };
