@@ -15,6 +15,7 @@ import {
   getDeviceInfo,
   getIOSVersion,
   checkStoragePersisted,
+  getServiceWorkerInfo,
   type DeviceInfo,
 } from '../lib/install';
 
@@ -26,6 +27,12 @@ type InstallState = 'desktop' | 'ios-safari' | 'ios-non-safari' | 'ios-standalon
 export function KurulumPage() {
   const [installState, setInstallState] = useState<InstallState>('desktop');
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
+  const [swInfo, setSwInfo] = useState<{
+    hasController: boolean;
+    state: string | null;
+    cacheNames: string[];
+    totalCacheEntries: number;
+  } | null>(null);
   const [urlCopied, setUrlCopied] = useState(false);
   const [diagnosticsCopied, setDiagnosticsCopied] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
@@ -62,6 +69,11 @@ export function KurulumPage() {
     checkStoragePersisted(navigator).then((persisted) => {
       setDeviceInfo((prev) => (prev ? { ...prev, isPersisted: persisted } : null));
     });
+
+    // Service Worker bilgileri (async)
+    getServiceWorkerInfo(navigator).then((info) => {
+      setSwInfo(info);
+    });
   }, []);
 
   // Dev mode override
@@ -81,11 +93,17 @@ export function KurulumPage() {
   const handleCopyDiagnostics = async () => {
     if (!deviceInfo) return;
 
+    const iosVersion = getIOSVersion(deviceInfo.userAgent) || 'Belirtilmemiş';
+
     const diagnosticsText = `
 Cihaz Tanılama - Rutin Test
 
 Ana ekran uygulaması: ${deviceInfo.standalone ? 'Evet' : 'Hayır'}
 Service Worker: ${deviceInfo.hasServiceWorker ? 'Evet' : 'Hayır'}
+SW Controller: ${swInfo?.hasController ? 'Evet' : 'Hayır'}
+SW Durumu: ${swInfo?.state || 'Bilinmiyor'}
+Cache sayısı: ${swInfo?.cacheNames.length || 0}
+Toplam önbellek girdisi: ${swInfo?.totalCacheEntries || 0}
 Notification API: ${deviceInfo.hasNotification ? 'Evet' : 'Hayır'}
 Push Manager: ${deviceInfo.hasPushManager ? 'Evet' : 'Hayır'}
 Depolama kalıcı: ${deviceInfo.isPersisted === null ? 'Kontrol ediliyor...' : deviceInfo.isPersisted ? 'Evet' : 'Hayır'}
@@ -95,6 +113,7 @@ Saat dilimi: ${deviceInfo.timeZone}
 Notification izni: ${deviceInfo.notificationPermission}
 Yayın adresi: ${deviceInfo.appUrl}
 Uygulama sürümü: ${deviceInfo.appVersion}
+iOS sürümü (yaklaşık): ${iosVersion}
 User Agent: ${deviceInfo.userAgent}
 `.trim();
 
@@ -253,6 +272,18 @@ User Agent: ${deviceInfo.userAgent}
 
                 <dt>{tr.kurulum.diagnostics.serviceWorker}</dt>
                 <dd>{deviceInfo.hasServiceWorker ? tr.kurulum.diagnostics.yes : tr.kurulum.diagnostics.no}</dd>
+
+                <dt>SW Controller</dt>
+                <dd>{swInfo?.hasController ? tr.kurulum.diagnostics.yes : tr.kurulum.diagnostics.no}</dd>
+
+                <dt>SW Durumu</dt>
+                <dd>{swInfo?.state || 'Bilinmiyor'}</dd>
+
+                <dt>Cache sayısı</dt>
+                <dd>{swInfo?.cacheNames.length || 0}</dd>
+
+                <dt>Toplam önbellek girdisi</dt>
+                <dd>{swInfo?.totalCacheEntries || 0}</dd>
 
                 <dt>{tr.kurulum.diagnostics.notification}</dt>
                 <dd>{deviceInfo.hasNotification ? tr.kurulum.diagnostics.yes : tr.kurulum.diagnostics.no}</dd>

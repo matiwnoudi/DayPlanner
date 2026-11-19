@@ -40,3 +40,29 @@ Bu adımda iPhone veya Safari’ye özel bir davranış varsayılmadı.
 - **navigator.standalone API**: iOS Safari'de `navigator.standalone` boolean özelliği, uygulamanın standalone modda (ana ekrandan açıldığında) çalışıp çalışmadığını gösterir. Bu, Safari'ye özel bir API'dir (W3C standardı değil). iOS'un yeni sürümlerinde bu API'nin hala desteklenip desteklenmediği veya `matchMedia('(display-mode: standalone)')` ile tamamen değiştirilip değiştirilmediği belirsiz. Kodda her iki yöntem de kullanılıyor. Masaüstü Safari'de `navigator.standalone` tanımsız. iPhone'da test edilmedi. Kaynak: [Apple Safari Web Content Guide](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html). Kodda `TODO-VERIFY` notu var: `src/lib/install.ts` içinde `isStandalone()` fonksiyonu.
 
 - **matchMedia display-mode standalone**: W3C Display Modes spec'e göre `window.matchMedia('(display-mode: standalone)')` ile uygulamanın standalone modda olup olmadığı sorgulanabilir. iOS Safari'nin bu standartı destekleyip desteklemediği ve `navigator.standalone` ile aynı sonucu verip vermediği belirsiz. Masaüstü Chrome'da test edildi (browser standalone modunu simüle etmek zor). iPhone'da test edilmedi. Kaynak: [MDN display-mode](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/display-mode). Kodda `TODO-VERIFY` notu var: `src/lib/install.ts`.
+
+
+## Gerçek iPhone Ölçümleri (Kullanıcı Testi)
+
+**Tarih**: Kasım 2026 (iOS 18.7, Safari)
+**Cihaz**: iPhone 16 Pro
+
+### ✅ Doğrulanan Davranışlar:
+
+1. **Ana ekran uygulaması çalışıyor**: Safari'den "Ana Ekrana Ekle" ile eklendi, standalone modda (tam ekran) açıldı. URL çubuğu görünmüyor, durum çubuğu (saat/pil) görünüyor.
+
+2. **Service Worker aktif**: `navigator.serviceWorker.controller` mevcut, precache çalışıyor, cache'te 8 dosya var.
+
+3. **Offline açılış GÖZLENDİ (Kullanıcı Testi 1)**: Uçak modunda uygulama açıldı. Tüm sayfa açılış testleri Playwright (Chromium ve WebKit) ile geçti.
+
+4. **storage.persisted() = false**: iOS'ta kalıcılık garantisi verilmiyor. Uygulama verisi düşük disk alanında iOS tarafından silinebilir.
+
+5. **UserAgent'ta iOS sürümü sabitlenmiş**: `iPhone OS 18_7` gerçek iOS sürümünü göstermiyor. Gerçek sürüm `Version/26.6` kısmından okunuyor (iOS 18.7 → Version 26.6 mapping). Bu davranış iOS 18+ için doğrulandı.
+
+### ⏳ Henüz Test Edilmedi:
+
+- Push bildirimleri (Web Push API)
+- Sessiz mod, Focus Mode, Low Power Mode'da bildirim davranışı
+- Uygulama günlerce açılmazsa SW'nin sonlandırılıp sonlandırılmadığı
+- Quota exceeded hatası (düşük disk)
+- İran bağlantı testi (VPN'siz/VPN'li erişim)

@@ -139,14 +139,24 @@ describe('isSafariLike', () => {
 });
 
 describe('getIOSVersion', () => {
-  it('iPhone userAgent için iOS sürümünü döner', () => {
-    const ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15';
-    expect(getIOSVersion(ua)).toBe('17.0');
+  it('iPhone userAgent için iOS sürümünü döner (Version/ ile)', () => {
+    const ua =
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 Version/26.6 Mobile/15E148 Safari/604.1';
+    expect(getIOSVersion(ua)).toBe('26.6');
   });
 
-  it('iOS 18 için doğru sürümü döner', () => {
+  it('Gerçek iPhone 16 Pro userAgent (iOS 18.7 → Version 26.6.1)', () => {
+    // iOS 18+ sürümlerinde "iPhone OS x_y" değeri sabitlenmiştir (18_7)
+    // Gerçek iOS sürümü "Version/x.y" kısmından okunur
+    const ua =
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1';
+    expect(getIOSVersion(ua)).toBe('26.6'); // Version/26.6.1 → 26.6
+  });
+
+  it('iOS 18 için doğru sürümü döner (OS değerinden fallback)', () => {
+    // Version/ kısmı yoksa OS kısmından fallback (güvenilmez)
     const ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1_1 like Mac OS X) AppleWebKit/605.1.15';
-    expect(getIOSVersion(ua)).toBe('18.1');
+    expect(getIOSVersion(ua)).toBe('18.1 (OS değerinden)');
   });
 
   it('Android için null döner', () => {

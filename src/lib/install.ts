@@ -143,6 +143,9 @@ export function isSafariLike(userAgent: string): boolean {
  * UserAgent'tan çıkarılan sürüm kesin olmayabilir.
  * Güvenilir iOS sürümü için kullanıcıdan manuel olarak sormak daha doğrudur.
  *
+ * NOT: iOS 18+ sürümlerinde userAgent'taki "iPhone OS x_y" değeri sabitlenmiştir.
+ * Gerçek iOS sürümü "Version/x.y" kısmından okunmalıdır.
+ *
  * @param userAgent - navigator.userAgent değeri
  * @returns iOS sürümü (yaklaşık) veya null
  */
@@ -151,10 +154,16 @@ export function getIOSVersion(userAgent: string): string | null {
     return null;
   }
 
-  // "OS 17_0" veya "iPhone OS 17_0" gibi pattern ara
-  const match = userAgent.match(/OS (\d+)[_.](\d+)/i);
-  if (match) {
-    return `${match[1]}.${match[2]}`;
+  // iOS 18+ için: "Version/x.y" kısmından oku (daha güvenilir)
+  const versionMatch = userAgent.match(/Version\/(\d+)\.(\d+)/i);
+  if (versionMatch) {
+    return `${versionMatch[1]}.${versionMatch[2]}`;
+  }
+
+  // Fallback: Eski yöntem "OS x_y" (iOS 18+'da sabitlenmiş olabilir)
+  const osMatch = userAgent.match(/OS (\d+)[_.](\d+)/i);
+  if (osMatch) {
+    return `${osMatch[1]}.${osMatch[2]} (OS değerinden)`;
   }
 
   return null;
@@ -214,4 +223,69 @@ export async function checkStoragePersisted(navigator: Navigator): Promise<boole
   } catch {
     return false;
   }
+}
+
+
+/**
+ * Service Worker durumu bilgilerini al (async)
+ *
+ * @param navigator - Navigator objesi
+ * @returns Service Worker durum bilgileri
+ */
+export async function getServiceWorkerInfo(navigator: Navigator): Promise<{
+  hasController: boolean;
+  state: string | null;
+  cacheNames: string[];
+  totalCacheEntries: number;
+}> {
+  if (!('serviceWorker' in navigator)) {
+    return {
+      hasController: false,
+      state: null,
+      cacheNames: [],
+      totalCacheEntries: 0,
+    };
+  }
+
+  const hasController = navigator.serviceWorker.controller !== null;
+  let state: string | null = null;
+
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (registration) {
+      if (registration.installing) {
+        state = 'installing';
+      } else if (registration.waiting) {
+        state = 'waiting';
+      } else if (registration.active) {
+        state = 'active';
+      }
+    }
+  } catch {
+    // Registration kontrolü başarısız
+  }
+
+  // Cache bilgileri
+  let cacheNames: string[] = [];
+  let totalCacheEntries = 0;
+
+  try {
+    cacheNames = await caches.keys();
+    
+    // Her cache'teki entry sayısını say
+    for (const cacheName of cacheNames) {
+      const cache = await caches.open(cacheName);
+      const keys = await cache.keys();
+      totalCacheEntries += keys.length;
+    }
+  } catch {
+    // Cache erişimi başarısız
+  }
+
+  return {
+    hasController,
+    state,
+    cacheNames,
+    totalCacheEntries,
+  };
 }
