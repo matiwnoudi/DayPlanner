@@ -19,8 +19,9 @@ import {
   type DeviceInfo,
 } from '../lib/install';
 
-// Package.json'dan sürüm
-const APP_VERSION = '0.0.0'; // Manuel güncelleme gerekir, build time'da inject edilebilir
+// Package.json'dan sürüm + build zamanı
+const APP_VERSION = '0.0.0';
+const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'dev';
 
 type InstallState = 'desktop' | 'ios-safari' | 'ios-non-safari' | 'ios-standalone';
 
@@ -246,7 +247,7 @@ User Agent: ${deviceInfo.userAgent}
           <p className="success-emoji">✓</p>
           <h2>{tr.kurulum.installed}</h2>
           <p>{tr.kurulum.installedNote}</p>
-          <Link to="/bildirimler" className="btn-primary">
+          <Link to="/bildirimler" className="btn-primary continue-button">
             {tr.kurulum.continueToNotifications}
           </Link>
         </div>
@@ -316,7 +317,17 @@ User Agent: ${deviceInfo.userAgent}
                 <dd style={{ wordBreak: 'break-all' }}>{deviceInfo.appUrl}</dd>
 
                 <dt>{tr.kurulum.diagnostics.appVersion}</dt>
-                <dd>{deviceInfo.appVersion}</dd>
+                <dd>
+                  {deviceInfo.appVersion}
+                  {BUILD_TIME !== 'dev' && (
+                    <>
+                      <br />
+                      <span style={{ fontSize: '0.75rem', color: 'var(--fg-secondary)' }}>
+                        Build: {new Date(BUILD_TIME).toLocaleString('tr-TR')}
+                      </span>
+                    </>
+                  )}
+                </dd>
 
                 <dt>{tr.kurulum.diagnostics.iosVersion}</dt>
                 <dd>

@@ -69,7 +69,15 @@ export default defineConfig(({ mode }) => {
         },
 
         // Workbox seçenekleri - injectionPoint varsayılan (self.__WB_MANIFEST) kullanılır
+        injectManifest: {
+          // favicon.svg'yi precache'e dahil et
+          globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+        },
       }),
     ],
+    define: {
+      // Build zamanını uygulamaya enjekte et
+      __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    },
   };
 });

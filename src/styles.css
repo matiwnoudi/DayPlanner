@@ -525,3 +525,8 @@ main {
   text-align: center;
   margin-top: 0.5rem;
 }
+
+/* Bildirimler butonu: tek satırda kalsın */
+.continue-button {
+  white-space: nowrap;
+}

@@ -17,6 +17,16 @@ test.describe('Offline functionality', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
 
+    // Network request'leri kaydet (offline'da hiçbiri fail olmamalı)
+    const failedRequests: string[] = [];
+    page.on('requestfailed', (request) => {
+      const resourceType = request.resourceType();
+      // Sadece önemli resource type'ları kontrol et
+      if (['document', 'script', 'stylesheet', 'image', 'manifest', 'font'].includes(resourceType)) {
+        failedRequests.push(`${resourceType}: ${request.url()}`);
+      }
+    });
+
     // 1. İlk yükleme ve SW kayıt
     await page.goto(BASE_URL);
 
@@ -42,7 +52,12 @@ test.describe('Offline functionality', () => {
     console.log('✓ Network set to offline');
 
     // 4a. Sayfayı reload ile yeniden yükle (gerçek offline test)
+    failedRequests.length = 0; // Listeyi temizle
     await page.reload({ waitUntil: 'networkidle' });
+
+    // Offline'dayken hiçbir önemli istek başarısız olmamalı
+    expect(failedRequests).toEqual([]);
+    console.log('  ✓ No failed requests during offline reload');
 
     // Sayfa yüklenmeli
     const title = await page.title();
@@ -114,6 +129,15 @@ test.describe('Offline functionality', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
 
+    // Network request'leri kaydet
+    const failedRequests: string[] = [];
+    page.on('requestfailed', (request) => {
+      const resourceType = request.resourceType();
+      if (['document', 'script', 'stylesheet', 'image', 'manifest', 'font'].includes(resourceType)) {
+        failedRequests.push(`${resourceType}: ${request.url()}`);
+      }
+    });
+
     // 1. İlk yükleme ve SW kayıt
     await page.goto(BASE_URL);
 
@@ -139,7 +163,12 @@ test.describe('Offline functionality', () => {
     console.log('✓ [WebKit] Network set to offline');
 
     // 4a. Sayfayı reload ile yeniden yükle (gerçek offline test)
+    failedRequests.length = 0; // Listeyi temizle
     await page.reload({ waitUntil: 'networkidle' });
+
+    // Offline'dayken hiçbir önemli istek başarısız olmamalı
+    expect(failedRequests).toEqual([]);
+    console.log('  ✓ [WebKit] No failed requests during offline reload');
 
     // Sayfa yüklenmeli
     const title = await page.title();
