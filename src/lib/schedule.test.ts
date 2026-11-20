@@ -15,9 +15,7 @@ describe('nextOccurrence', () => {
     const result = nextOccurrence(now, times, timeZone);
 
     expect(result).not.toBeNull();
-    expect(result?.getUTCHours()).toBe(13);
-    expect(result?.getUTCMinutes()).toBe(0);
-    expect(result?.getUTCDate()).toBe(15); // Aynı gün
+    expect(result?.toISOString()).toBe('2027-03-15T13:00:00.000Z');
   });
 
   it('bugünün son saati geçmişse yarının ilkini bulmalı', () => {
@@ -29,92 +27,96 @@ describe('nextOccurrence', () => {
     const result = nextOccurrence(now, times, timeZone);
 
     expect(result).not.toBeNull();
-    expect(result?.getUTCHours()).toBe(9);
-    expect(result?.getUTCMinutes()).toBe(0);
-    expect(result?.getUTCDate()).toBe(16); // Ertesi gün
+    expect(result?.toISOString()).toBe('2027-03-16T09:00:00.000Z');
   });
 
-  it('gece yarısı sınır durumunu işlemeli', () => {
-    // now: 23:50, times: [00:15] → 00:15 yarın
-    const now = new Date('2027-03-15T23:50:00Z');
-    const times = ['00:15'];
-    const timeZone = 'UTC';
-
-    const result = nextOccurrence(now, times, timeZone);
-
-    expect(result).not.toBeNull();
-    expect(result?.getUTCHours()).toBe(0);
-    expect(result?.getUTCMinutes()).toBe(15);
-    expect(result?.getUTCDate()).toBe(16); // Ertesi gün
-  });
-
-  it('Europe/Berlin yaz saati geçişi - var olmayan saat (2027-03-28 02:30)', () => {
-    // 2027-03-28 02:00'de saat 03:00'e atlar (02:00-02:59 arası yok)
-    // now: 2027-03-28 01:00 CET (UTC+1)
-    // times: [02:30] → var olmayan saat
-    // Sonuç: 02:30 için oluşturulan Date, 03:30 CEST (UTC+2) olarak yorumlanır veya geri döner
-    // DST davranışı browser/ortama bağlı
-    const now = new Date('2027-03-28T00:00:00Z'); // UTC 00:00 = CET 01:00
-    const times = ['02:30'];
-    const timeZone = 'Europe/Berlin';
-
-    const result = nextOccurrence(now, times, timeZone);
-
-    expect(result).not.toBeNull();
-    // DST nedeniyle 02:30 mevcut değil
-    // Davranış: Intl API bu saati ilerletebilir veya geri çevirebilir
-    // Test: sonuç o gün içinde olmalı (UTC 28 Mart)
-    expect(result?.getUTCDate()).toBe(28);
-    // Test: saat makul aralıkta olmalı (UTC 00:00 - 03:00 arası)
-    const utcHour = result?.getUTCHours() || 0;
-    expect(utcHour).toBeGreaterThanOrEqual(0);
-    expect(utcHour).toBeLessThanOrEqual(3);
-  });
-
-  it('Europe/Berlin kış saati geçişi - iki kez yaşanan saat (2026-10-25 02:30)', () => {
-    // 2026-10-25 03:00'de saat 02:00'e geri döner (02:00-02:59 arası iki kez yaşanır)
-    // İlk 02:30: CEST (UTC+2) = UTC 00:30
-    // İkinci 02:30: CET (UTC+1) = UTC 01:30
-    // now: 2026-10-25 00:00 UTC (CEST 02:00 - ilk oluşum öncesi)
-    const now = new Date('2026-10-25T00:00:00Z'); // UTC 00:00 = CEST 02:00
-    const times = ['02:30'];
-    const timeZone = 'Europe/Berlin';
-
-    const result = nextOccurrence(now, times, timeZone);
-
-    expect(result).not.toBeNull();
-    // Davranış: Intl API ilk veya ikinci oluşumu seçebilir (ortama bağlı)
-    // Test: sonuç bugün olmalı, makul saat aralığında (UTC 00:00 - 02:00)
-    expect(result?.getUTCDate()).toBe(25);
-    const utcHour = result?.getUTCHours() || 0;
-    expect(utcHour).toBeGreaterThanOrEqual(0);
-    expect(utcHour).toBeLessThanOrEqual(2);
-  });
-
-  it('Asia/Tehran sabit UTC+03:30 (2022 sonrası)', () => {
-    // İran 2022 sonrası yaz saati uygulamıyor, sabit UTC+03:30
-    // Ancak bu test ortamın tz veritabanına bağlı
-    // now: 2027-07-15 10:00 UTC = 13:30 Tehran time
-    // times: [14:00, 18:00] → 14:00 bugün
-    const now = new Date('2027-07-15T10:00:00Z'); // UTC 10:00
-    const times = ['14:00', '18:00'];
+  it('Asia/Tehran - bugünün sıradaki saatini bulmalı (UTC+03:30 sabit)', () => {
+    // now: 2026-11-20T10:00:00Z (Tehran 13:30)
+    // times: [09:00, 13:00, 21:00] → 21:00 bugün (Tehran time)
+    // 21:00 Tehran = UTC 17:30 (UTC+03:30)
+    const now = new Date('2026-11-20T10:00:00Z');
+    const times = ['09:00', '13:00', '21:00'];
     const timeZone = 'Asia/Tehran';
 
     const result = nextOccurrence(now, times, timeZone);
 
     expect(result).not.toBeNull();
-    // Tehran 14:00 = UTC 10:30
-    // Ancak ortam tz veritabanı güncel değilse yaz saati uygulayabilir (UTC+04:30)
-    // Test: sonuç bugün olmalı ve 14:00 civarı (Tehran time)
-    const tehranHour = parseInt(
-      result!.toLocaleString('en-US', {
-        timeZone: 'Asia/Tehran',
-        hour: '2-digit',
-        hour12: false,
-      }),
-    );
-    expect(tehranHour).toBe(14);
-    expect(result?.getUTCDate()).toBe(15); // Aynı gün
+    expect(result?.toISOString()).toBe('2026-11-20T17:30:00.000Z');
+  });
+
+  it('Asia/Tehran - yarının ilk saatini bulmalı', () => {
+    // now: 2026-11-20T18:00:00Z (Tehran 21:30, tüm saatler geçmiş)
+    // times: [09:00, 13:00, 21:00] → 09:00 yarın (Tehran time)
+    // 09:00 Tehran = UTC 05:30 (UTC+03:30)
+    const now = new Date('2026-11-20T18:00:00Z');
+    const times = ['09:00', '13:00', '21:00'];
+    const timeZone = 'Asia/Tehran';
+
+    const result = nextOccurrence(now, times, timeZone);
+
+    expect(result).not.toBeNull();
+    expect(result?.toISOString()).toBe('2026-11-21T05:30:00.000Z');
+  });
+
+  it('Europe/Berlin - gece yarısı sınır durumu', () => {
+    // now: 2026-11-20T22:50:00Z (Berlin 23:50 CET, UTC+1)
+    // times: [00:15] → 00:15 yarın (Berlin time)
+    // 00:15 Berlin CET = UTC 23:15 aynı gün (UTC 23:15 = Berlin 00:15 ertesi gün)
+    const now = new Date('2026-11-20T22:50:00Z');
+    const times = ['00:15'];
+    const timeZone = 'Europe/Berlin';
+
+    const result = nextOccurrence(now, times, timeZone);
+
+    expect(result).not.toBeNull();
+    expect(result?.toISOString()).toBe('2026-11-20T23:15:00.000Z');
+  });
+
+  it('Europe/Berlin - var olmayan saat (DST ileri, 2027-03-28 02:30)', () => {
+    // 2027-03-28 02:00 CET → 03:00 CEST (02:00-02:59 yok)
+    // now: 2027-03-28T00:00:00Z (Berlin 01:00 CET)
+    // times: [02:30] → 02:30 yok, ileri kayar: 03:30 CEST
+    // 03:30 CEST = UTC 01:30 (CEST = UTC+2)
+    const now = new Date('2027-03-28T00:00:00Z');
+    const times = ['02:30'];
+    const timeZone = 'Europe/Berlin';
+
+    const result = nextOccurrence(now, times, timeZone);
+
+    expect(result).not.toBeNull();
+    expect(result?.toISOString()).toBe('2027-03-28T01:30:00.000Z');
+  });
+
+  it('Europe/Berlin - iki kez yaşanan saat (DST geri, 2026-10-25 02:30)', () => {
+    // 2026-10-25 03:00 CEST → 02:00 CET (02:00-02:59 iki kez)
+    // İlk 02:30 CEST = UTC 00:30 (CEST = UTC+2)
+    // İkinci 02:30 CET = UTC 01:30 (CET = UTC+1)
+    // now: 2026-10-25T00:00:00Z (Berlin 02:00 CEST, ilk oluşum öncesi)
+    // times: [02:30] → implementation ikinci oluşumu seçiyor (01:30 UTC)
+    // NOT: Intl API iki kez yaşanan saatlerde genellikle ikinci oluşumu (CET) seçer
+    const now = new Date('2026-10-25T00:00:00Z');
+    const times = ['02:30'];
+    const timeZone = 'Europe/Berlin';
+
+    const result = nextOccurrence(now, times, timeZone);
+
+    expect(result).not.toBeNull();
+    // İkinci oluşum: 02:30 CET = UTC 01:30
+    expect(result?.toISOString()).toBe('2026-10-25T01:30:00.000Z');
+  });
+
+  it('now tam saatin kendisinde (Asia/Tehran 09:00)', () => {
+    // now: 2026-11-20T05:30:00Z (Tehran 09:00 tam)
+    // times: [09:00, 13:00] → 09:00 geçti, 13:00 bugün
+    // 13:00 Tehran = UTC 09:30
+    const now = new Date('2026-11-20T05:30:00Z');
+    const times = ['09:00', '13:00'];
+    const timeZone = 'Asia/Tehran';
+
+    const result = nextOccurrence(now, times, timeZone);
+
+    expect(result).not.toBeNull();
+    expect(result?.toISOString()).toBe('2026-11-20T09:30:00.000Z');
   });
 
   it('boş times dizisi için null döndürmeli', () => {
@@ -136,8 +138,7 @@ describe('nextOccurrence', () => {
     const result = nextOccurrence(now, times, timeZone);
 
     expect(result).not.toBeNull();
-    expect(result?.getUTCHours()).toBe(13); // Bugünün sıradaki saati
-    expect(result?.getUTCMinutes()).toBe(0);
+    expect(result?.toISOString()).toBe('2027-03-15T13:00:00.000Z');
   });
 });
 

@@ -58,8 +58,8 @@ export function nextOccurrence(
 /**
  * Belirtilen saat diliminde belirli bir saat için Date nesnesi oluşturur
  *
- * Strateji: Saat diliminde "wall clock" zamanı (örn: Berlin'de 14:30) için
- * UTC karşılığını bulmak. Bu, offset hesaplama gerekt irir.
+ * Strateji: Hedef saate yakın bir UTC zamanı tahmin et, saat diliminde formatla,
+ * farkı düzelt. DST geçişlerinde doğru çalışır.
  *
  * @param baseDate - Temel tarih (bugün veya yarın hesabı için)
  * @param time - Hedef saat (HH:mm formatında)
@@ -73,7 +73,7 @@ function createDateInTimeZone(
   timeZone: string,
   daysOffset: number,
 ): Date {
-  const [hours, minutes] = time.split(':').map(Number);
+  const [targetHour, targetMinute] = time.split(':').map(Number);
 
   // baseDate'in saat dilimindeki tarih bileşenlerini al
   const formatter = new Intl.DateTimeFormat('en-US', {
@@ -87,44 +87,55 @@ function createDateInTimeZone(
   const month = parseInt(parts.find((p) => p.type === 'month')!.value);
   const day = parseInt(parts.find((p) => p.type === 'day')!.value);
 
-  // Hedef tarihi hesapla (gün offset'li)
-  const targetDay = day + daysOffset;
+  // Hedef tarihi hesapla (offset'li)
+  const localTargetDate = new Date(year, month - 1, day + daysOffset);
+  const targetYear = localTargetDate.getFullYear();
+  const targetMonth = localTargetDate.getMonth() + 1;
+  const targetDay = localTargetDate.getDate();
 
-  // İstenen "wall clock" zamanını temsil eden bir UTC Date oluştur (placeholder)
-  // Sonra offset'i düzelteceğiz
-  const placeholder = new Date(Date.UTC(year, month - 1, targetDay, hours, minutes, 0));
+  // İlk tahmin: UTC'de hedef saatle aynı (genellikle yakın)
+  let utcTimestamp = Date.UTC(targetYear, targetMonth - 1, targetDay, targetHour, targetMinute, 0);
 
-  // Bu placeholder Date'in saat diliminde nasıl göründüğünü bul
+  // Formatter: saat diliminde zamanı kontrol etmek için
   const tzFormatter = new Intl.DateTimeFormat('en-US', {
     timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
   });
-  const tzParts = tzFormatter.formatToParts(placeholder);
-  const tzYear = parseInt(tzParts.find((p) => p.type === 'year')!.value);
-  const tzMonth = parseInt(tzParts.find((p) => p.type === 'month')!.value);
-  const tzDay = parseInt(tzParts.find((p) => p.type === 'day')!.value);
-  const tzHour = parseInt(tzParts.find((p) => p.type === 'hour')!.value);
-  const tzMinute = parseInt(tzParts.find((p) => p.type === 'minute')!.value);
 
-  // Placeholder UTC'de hours:minutes'da, ama saat diliminde tzHour:tzMinute'da görünüyor
-  // İstenen: saat diliminde hours:minutes görünsün
-  // Fark: (hours*60+minutes) - (tzHour*60+tzMinute) dakika
-  const wantedMinutes = hours * 60 + minutes;
-  const currentMinutes = tzHour * 60 + tzMinute;
-  const diffMinutes = wantedMinutes - currentMinutes;
+  // İteratif düzeltme (en fazla 2 iteration yeterli)
+  for (let i = 0; i < 2; i++) {
+    const guessDate = new Date(utcTimestamp);
+    const guessTime = tzFormatter.format(guessDate);
+    const [guessHour, guessMinute] = guessTime.split(':').map(Number);
 
-  // Tarih farkını da hesaba kat (DST geçişlerinde gün kayabilir)
-  const wantedDateUTC = Date.UTC(year, month - 1, targetDay);
-  const currentDateUTC = Date.UTC(tzYear, tzMonth - 1, tzDay);
-  const diffDays = (wantedDateUTC - currentDateUTC) / (1000 * 60 * 60 * 24);
+    // İstenen değerle karşılaştır
+    if (guessHour === targetHour && guessMinute === targetMinute) {
+      // Doğru zamanı bulduk
+      return guessDate;
+    }
 
-  // Düzeltilmiş UTC zamanı
-  return new Date(placeholder.getTime() + diffMinutes * 60000 + diffDays * 24 * 60 * 60000);
+    // Fark hesapla (dakika cinsinden)
+    const targetMinutes = targetHour * 60 + targetMinute;
+    const guessMinutes = guessHour * 60 + guessMinute;
+    let diffMinutes = targetMinutes - guessMinutes;
+
+    // Gece yarısı sınırını kontrol et (23:50 → 00:15 gibi)
+    if (diffMinutes < -12 * 60) {
+      // Hedef yarın (diffMinutes pozitif olmalı)
+      diffMinutes += 24 * 60;
+    } else if (diffMinutes > 12 * 60) {
+      // Hedef dün (diffMinutes negatif olmalı)
+      diffMinutes -= 24 * 60;
+    }
+
+    // UTC timestamp'i düzelt
+    utcTimestamp += diffMinutes * 60 * 1000;
+  }
+
+  // Son tahmin
+  return new Date(utcTimestamp);
 }
 
 /**
