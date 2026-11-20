@@ -18,6 +18,54 @@ export const tr = {
     takvim: 'Takvim dosyası dışa aktarma bu sayfaya gelecek.',
     kontrol: 'Elle doldurulan test listesi bu sayfaya gelecek.',
   },
+  common: {
+    loading: 'Yükleniyor...',
+  },
+  reminders: {
+    add: '+ Yeni Hatırlatma',
+    empty: 'Henüz hatırlatma eklememişsin. Yukarıdaki butona tıklayarak başla.',
+    createTitle: 'Yeni Hatırlatma',
+    editTitle: 'Hatırlatmayı Düzenle',
+    messagesTitle: 'Mesajlar',
+    titleLabel: 'Başlık',
+    titlePlaceholder: 'Örn: Sabah suyu',
+    titleRequired: 'Lütfen bir başlık gir.',
+    typeLabel: 'Tür',
+    types: {
+      water: 'Su',
+      meal: 'Öğün',
+      supplement: 'Takviye',
+    },
+    timesLabel: 'Saatler',
+    timesHelp: 'En fazla 12 saat ekleyebilirsin.',
+    addTime: 'Ekle',
+    removeTime: 'Kaldır',
+    timeDuplicate: 'Bu saat zaten ekli.',
+    timeLimit: 'En fazla 12 saat ekleyebilirsin.',
+    timesRequired: 'En az bir saat eklemelisin.',
+    save: 'Kaydet',
+    cancel: 'İptal',
+    edit: 'Düzenle',
+    delete: 'Sil',
+    messages: 'Mesajlar',
+    back: '← Geri',
+    messageCount: (count: number) =>
+      count === 0
+        ? 'Mesaj yok'
+        : count === 1
+          ? '1 mesaj'
+          : `${count} mesaj`,
+    deleteTitle: 'Hatırlatmayı Sil',
+    deleteMessage: (title: string) =>
+      `"${title}" hatırlatmasını silmek istediğinden emin misin? Bu işlem geri alınamaz.`,
+    confirmDelete: 'Sil',
+    addMessage: 'Mesaj Ekle',
+    messageRequired: 'Lütfen bir mesaj yaz.',
+    messagePlaceholder: 'Motivasyon mesajı yaz...',
+    messagesEmpty: 'Henüz mesaj eklememişsin.',
+    deleteMessageTitle: 'Mesajı Sil',
+    deleteMessageMessage: 'Bu mesajı silmek istediğinden emin misin?',
+  },
   kurulum: {
     title: 'Kurulum',
     notIPhone: 'Bu uygulama iPhone için tasarlandı.',

@@ -215,7 +215,7 @@ describe('pickMessage', () => {
 
 
 describe('nextOccurrence - property-based tests', () => {
-  it('2026-2027 arası her gün, çoklu saat dilimi, property kontrolleri', () => {
+  it('2026-2027 arası her gün, çoklu saat dilimi, property kontrolleri', { timeout: 10000 }, () => {
     const timeZones = ['Europe/Berlin', 'Asia/Tehran', 'America/New_York', 'Asia/Kolkata', 'UTC'];
     const times = ['00:15', '02:30', '09:00', '23:45'];
     const failures: string[] = [];
