@@ -92,8 +92,7 @@ describe('nextOccurrence', () => {
     // İlk 02:30 CEST = UTC 00:30 (CEST = UTC+2)
     // İkinci 02:30 CET = UTC 01:30 (CET = UTC+1)
     // now: 2026-10-25T00:00:00Z (Berlin 02:00 CEST, ilk oluşum öncesi)
-    // times: [02:30] → implementation ikinci oluşumu seçiyor (01:30 UTC)
-    // NOT: Intl API iki kez yaşanan saatlerde genellikle ikinci oluşumu (CET) seçer
+    // times: [02:30] → ilk oluşum: 02:30 CEST = UTC 00:30
     const now = new Date('2026-10-25T00:00:00Z');
     const times = ['02:30'];
     const timeZone = 'Europe/Berlin';
@@ -101,22 +100,22 @@ describe('nextOccurrence', () => {
     const result = nextOccurrence(now, times, timeZone);
 
     expect(result).not.toBeNull();
-    // İkinci oluşum: 02:30 CET = UTC 01:30
-    expect(result?.toISOString()).toBe('2026-10-25T01:30:00.000Z');
+    expect(result?.toISOString()).toBe('2026-10-25T00:30:00.000Z');
   });
 
-  it('now tam saatin kendisinde (Asia/Tehran 09:00)', () => {
-    // now: 2026-11-20T05:30:00Z (Tehran 09:00 tam)
-    // times: [09:00, 13:00] → 09:00 geçti, 13:00 bugün
-    // 13:00 Tehran = UTC 09:30
-    const now = new Date('2026-11-20T05:30:00Z');
-    const times = ['09:00', '13:00'];
+  it('now tam saatin kendisinde (Asia/Tehran 13:00)', () => {
+    // now: 2026-11-20T09:30:00Z (Tehran 13:00 tam)
+    // times: [13:00] → 13:00 geçti, yarının 13:00'ü
+    // 13:00 Tehran yarın = UTC 09:30 yarın
+    const now = new Date('2026-11-20T09:30:00Z');
+    const times = ['13:00'];
     const timeZone = 'Asia/Tehran';
 
     const result = nextOccurrence(now, times, timeZone);
 
     expect(result).not.toBeNull();
-    expect(result?.toISOString()).toBe('2026-11-20T09:30:00.000Z');
+    expect(result?.toISOString()).toBe('2026-11-21T09:30:00.000Z');
+    expect(result!.getTime()).toBeGreaterThan(now.getTime());
   });
 
   it('boş times dizisi için null döndürmeli', () => {
@@ -211,5 +210,91 @@ describe('pickMessage', () => {
     const result = pickMessage(messages, '1', () => 0);
 
     expect(result).toEqual(messages[0]);
+  });
+});
+
+
+describe('nextOccurrence - property-based tests', () => {
+  it('2026-2027 arası her gün, çoklu saat dilimi, property kontrolleri', () => {
+    const timeZones = ['Europe/Berlin', 'Asia/Tehran', 'America/New_York', 'Asia/Kolkata', 'UTC'];
+    const times = ['00:15', '02:30', '09:00', '23:45'];
+    const failures: string[] = [];
+
+    // 2026-01-01'den 2027-12-31'e kadar
+    const startDate = new Date('2026-01-01T00:00:00Z');
+    const endDate = new Date('2027-12-31T23:59:59Z');
+
+    // Her gün için test (performance için her 7 günde bir)
+    for (let day = startDate; day <= endDate; day.setUTCDate(day.getUTCDate() + 7)) {
+      for (const tz of timeZones) {
+        // Her gün için farklı now zamanları
+        const nows = [
+          new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 0, 0, 0)),
+          new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 6, 0, 0)),
+          new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 12, 0, 0)),
+          new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 18, 0, 0)),
+        ];
+
+        for (const now of nows) {
+          const result = nextOccurrence(now, times, tz);
+
+          if (!result) {
+            failures.push(`${tz} ${now.toISOString()}: null result`);
+            continue;
+          }
+
+          // Property (a): result > now
+          if (result.getTime() <= now.getTime()) {
+            failures.push(`${tz} ${now.toISOString()}: result <= now (${result.toISOString()})`);
+          }
+
+          // Property (b): result - now ≤ 26 saat
+          const diffHours = (result.getTime() - now.getTime()) / (1000 * 60 * 60);
+          if (diffHours > 26) {
+            failures.push(
+              `${tz} ${now.toISOString()}: diff ${diffHours.toFixed(1)}h > 26h (${result.toISOString()})`,
+            );
+          }
+
+          // Property (c): sonucun tz'deki yerel saat:dakika times'tan biri
+          const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          });
+          const resultTime = formatter.format(result);
+
+          if (!times.includes(resultTime)) {
+            // Var olmayan saat kontrolü (DST gap)
+            // Gap sonrası saat olup olmadığını kontrol et
+            const [resultHour, resultMinute] = resultTime.split(':').map(Number);
+            const resultMinutes = resultHour * 60 + resultMinute;
+
+            // times'daki en yakın saati bul
+            const timeMinutes = times.map((t) => {
+              const [h, m] = t.split(':').map(Number);
+              return h * 60 + m;
+            });
+
+            const isAfterGap = timeMinutes.some((tm) => resultMinutes > tm && resultMinutes - tm <= 120);
+
+            if (!isAfterGap) {
+              failures.push(
+                `${tz} ${now.toISOString()}: result time ${resultTime} not in times and not after gap`,
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // Başarısız örnekleri yazdır (ilk 10)
+    if (failures.length > 0) {
+      console.log(`Property test failures (${failures.length} total):`);
+      failures.slice(0, 10).forEach((f) => console.log(`  ${f}`));
+    }
+
+    expect(failures).toEqual([]);
   });
 });

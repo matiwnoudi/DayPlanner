@@ -70,8 +70,13 @@ export default defineConfig(({ mode }) => {
 
         // Workbox seçenekleri - injectionPoint varsayılan (self.__WB_MANIFEST) kullanılır
         injectManifest: {
-          // favicon.svg'yi precache'e dahil et
-          globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+          // Precache patterns: JS/CSS/HTML + favicon.svg
+          globPatterns: ['**/*.{js,css,html}'],
+          // manifest.webmanifest ve ikonlar manifest.icons'dan otomatik eklenir
+          // favicon.svg'yi manuel ekle
+          additionalManifestEntries: [
+            { url: 'favicon.svg', revision: null },
+          ],
         },
       }),
     ],

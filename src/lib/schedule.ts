@@ -29,113 +29,155 @@ export function nextOccurrence(
     return null;
   }
 
-  // Saat listesini sırala ve tekilleştir (tekrarlı/sırasız times'ı desteklemek için)
+  // Saat listesini sırala ve tekilleştir
   const uniqueSortedTimes = Array.from(new Set(times)).sort();
 
-  // now'ı saat dilimine göre HH:mm formatına çevir
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-  const nowInTZ = formatter.format(now);
-  const [nowHoursStr, nowMinutesStr] = nowInTZ.split(':');
-  const nowTimeString = `${nowHoursStr}:${nowMinutesStr}`;
-
-  // Bugünün sıradaki saatini bul
-  for (const time of uniqueSortedTimes) {
-    if (time > nowTimeString) {
-      // Bugünün bu saatini döndür
-      return createDateInTimeZone(now, time, timeZone, 0);
-    }
-  }
-
-  // Bugünün tüm saatleri geçmiş, yarının ilk saatini döndür
-  return createDateInTimeZone(now, uniqueSortedTimes[0], timeZone, 1);
-}
-
-/**
- * Belirtilen saat diliminde belirli bir saat için Date nesnesi oluşturur
- *
- * Strateji: Hedef saate yakın bir UTC zamanı tahmin et, saat diliminde formatla,
- * farkı düzelt. DST geçişlerinde doğru çalışır.
- *
- * @param baseDate - Temel tarih (bugün veya yarın hesabı için)
- * @param time - Hedef saat (HH:mm formatında)
- * @param timeZone - IANA saat dilimi
- * @param daysOffset - Gün offset'i (0: bugün, 1: yarın)
- * @returns Date nesnesi (UTC zaman damgası)
- */
-function createDateInTimeZone(
-  baseDate: Date,
-  time: string,
-  timeZone: string,
-  daysOffset: number,
-): Date {
-  const [targetHour, targetMinute] = time.split(':').map(Number);
-
-  // baseDate'in saat dilimindeki tarih bileşenlerini al
+  // now'ın saat dilimindeki yerel tarihini al
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
   });
-  const parts = formatter.formatToParts(baseDate);
+  const parts = formatter.formatToParts(now);
+  const nowYear = parseInt(parts.find((p) => p.type === 'year')!.value);
+  const nowMonth = parseInt(parts.find((p) => p.type === 'month')!.value);
+  const nowDay = parseInt(parts.find((p) => p.type === 'day')!.value);
+
+  // dayOffset 0, 1, 2 için kontrol et (bugün, yarın, öbür gün)
+  for (let dayOffset = 0; dayOffset <= 2; dayOffset++) {
+    // Hedef tarihi hesapla (JavaScript Date kullanarak takvim aritmetiği)
+    const targetDate = new Date(Date.UTC(nowYear, nowMonth - 1, nowDay));
+    targetDate.setUTCDate(targetDate.getUTCDate() + dayOffset);
+    const targetYear = targetDate.getUTCFullYear();
+    const targetMonth = targetDate.getUTCMonth() + 1;
+    const targetDay = targetDate.getUTCDate();
+
+    // Bu günün tüm saatleri için instant hesapla
+    for (const time of uniqueSortedTimes) {
+      const [hour, minute] = time.split(':').map(Number);
+      const instant = wallToInstant(targetYear, targetMonth, targetDay, hour, minute, timeZone);
+
+      // instant > now ise bulduk
+      if (instant && instant.getTime() > now.getTime()) {
+        return instant;
+      }
+    }
+  }
+
+  // 3 gün içinde bulunamadı (olmaması gereken durum)
+  return null;
+}
+
+/**
+ * Saat dilimindeki belirli bir offset'i hesaplar
+ *
+ * @param timeZone - IANA saat dilimi
+ * @param instant - UTC timestamp (Date)
+ * @returns Offset milisaniye cinsinden (UTC - local time)
+ */
+function getOffsetMs(timeZone: string, instant: Date): number {
+  // instant'ın saat dilimindeki yerel tarih/saatini al
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(instant);
   const year = parseInt(parts.find((p) => p.type === 'year')!.value);
   const month = parseInt(parts.find((p) => p.type === 'month')!.value);
   const day = parseInt(parts.find((p) => p.type === 'day')!.value);
+  const hour = parseInt(parts.find((p) => p.type === 'hour')!.value);
+  const minute = parseInt(parts.find((p) => p.type === 'minute')!.value);
+  const second = parseInt(parts.find((p) => p.type === 'second')!.value);
 
-  // Hedef tarihi hesapla (offset'li)
-  const localTargetDate = new Date(year, month - 1, day + daysOffset);
-  const targetYear = localTargetDate.getFullYear();
-  const targetMonth = localTargetDate.getMonth() + 1;
-  const targetDay = localTargetDate.getDate();
+  // Bu yerel zamanı UTC olarak yorumla
+  const wallAsUTC = Date.UTC(year, month - 1, day, hour, minute, second);
 
-  // İlk tahmin: UTC'de hedef saatle aynı (genellikle yakın)
-  let utcTimestamp = Date.UTC(targetYear, targetMonth - 1, targetDay, targetHour, targetMinute, 0);
+  // Offset = wallAsUTC - instant
+  return wallAsUTC - instant.getTime();
+}
 
-  // Formatter: saat diliminde zamanı kontrol etmek için
-  const tzFormatter = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
+/**
+ * Saat dilimindeki wall clock zamanını UTC instant'a çevirir
+ *
+ * @param year - Yıl
+ * @param month - Ay (1-12)
+ * @param day - Gün
+ * @param hour - Saat (0-23)
+ * @param minute - Dakika (0-59)
+ * @param timeZone - IANA saat dilimi
+ * @returns Date nesnesi (UTC instant) veya null (geçersizse)
+ *
+ * Algoritma:
+ * - Wall clock zamanını UTC olarak yorumla (wallAsUTC)
+ * - wallAsUTC - 24h ve wallAsUTC + 24h anlarındaki offset'leri hesapla
+ * - Her farklı offset için aday instant hesapla: wallAsUTC - offset
+ * - Adayın yerel tarih/saati tam (y,m,d,h,m) ise geçerli aday
+ * - İki kez yaşanan saat: EN KÜÇÜK instant'ı dön (ilk oluşum)
+ * - Var olmayan saat: önceki offset'i kullan
+ */
+function wallToInstant(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  timeZone: string,
+): Date | null {
+  // Wall clock zamanını UTC olarak yorumla
+  const wallAsUTC = Date.UTC(year, month - 1, day, hour, minute, 0);
 
-  // İteratif düzeltme (en fazla 2 iteration yeterli)
-  for (let i = 0; i < 2; i++) {
-    const guessDate = new Date(utcTimestamp);
-    const guessTime = tzFormatter.format(guessDate);
-    const [guessHour, guessMinute] = guessTime.split(':').map(Number);
+  // 24 saat öncesi ve sonrası anlarındaki offset'leri hesapla
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const offsetBefore = getOffsetMs(timeZone, new Date(wallAsUTC - oneDayMs));
+  const offsetAfter = getOffsetMs(timeZone, new Date(wallAsUTC + oneDayMs));
 
-    // İstenen değerle karşılaştır
-    if (guessHour === targetHour && guessMinute === targetMinute) {
-      // Doğru zamanı bulduk
-      return guessDate;
+  // Farklı offset'leri topla
+  const offsets = Array.from(new Set([offsetBefore, offsetAfter]));
+
+  const candidates: Date[] = [];
+
+  // Her offset için aday instant hesapla
+  for (const offset of offsets) {
+    const candidateInstant = new Date(wallAsUTC - offset);
+
+    // Adayın yerel tarih/saatini kontrol et
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(candidateInstant);
+    const cYear = parseInt(parts.find((p) => p.type === 'year')!.value);
+    const cMonth = parseInt(parts.find((p) => p.type === 'month')!.value);
+    const cDay = parseInt(parts.find((p) => p.type === 'day')!.value);
+    const cHour = parseInt(parts.find((p) => p.type === 'hour')!.value);
+    const cMinute = parseInt(parts.find((p) => p.type === 'minute')!.value);
+
+    // Tam eşleşme mi?
+    if (cYear === year && cMonth === month && cDay === day && cHour === hour && cMinute === minute) {
+      candidates.push(candidateInstant);
     }
-
-    // Fark hesapla (dakika cinsinden)
-    const targetMinutes = targetHour * 60 + targetMinute;
-    const guessMinutes = guessHour * 60 + guessMinute;
-    let diffMinutes = targetMinutes - guessMinutes;
-
-    // Gece yarısı sınırını kontrol et (23:50 → 00:15 gibi)
-    if (diffMinutes < -12 * 60) {
-      // Hedef yarın (diffMinutes pozitif olmalı)
-      diffMinutes += 24 * 60;
-    } else if (diffMinutes > 12 * 60) {
-      // Hedef dün (diffMinutes negatif olmalı)
-      diffMinutes -= 24 * 60;
-    }
-
-    // UTC timestamp'i düzelt
-    utcTimestamp += diffMinutes * 60 * 1000;
   }
 
-  // Son tahmin
-  return new Date(utcTimestamp);
+  // Geçerli aday varsa EN KÜÇÜĞÜNÜ dön (iki kez yaşanan saatte ilk oluşum)
+  if (candidates.length > 0) {
+    candidates.sort((a, b) => a.getTime() - b.getTime());
+    return candidates[0];
+  }
+
+  // Geçerli aday yok (var olmayan saat): önceki offset'i kullan
+  return new Date(wallAsUTC - offsetBefore);
 }
 
 /**
