@@ -121,8 +121,8 @@ test.describe('Offline functionality', () => {
 });
 
 test.describe('IndexedDB Persistence', () => {
-  test('should load reminders offline from IndexedDB', async ({ page, context }, testInfo) => {
-    testInfo.setTimeout(45000);
+  test('should persist reminder with messages across offline reload', async ({ page, context }, testInfo) => {
+    testInfo.setTimeout(60000);
     await page.goto(BASE_URL);
 
     // SW aktif olana kadar bekle
@@ -131,25 +131,62 @@ test.describe('IndexedDB Persistence', () => {
       { timeout: 15000 }
     );
 
+    // UpdatePrompt varsa 6s bekle (auto-close)
+    await page.waitForTimeout(7000);
+
     // Hatırlatmalar sayfasına git
     await page.click('a[href="#/hatirlatmalar"]');
     await page.waitForTimeout(2000);
 
-    // Sayfa yüklendi mi kontrol et
-    const titleVisible = await page.locator('h1:has-text("Hatırlatmalar")').isVisible();
-    expect(titleVisible).toBe(true);
+    // Yeni hatırlatma ekle
+    await page.click('button:has-text("+ Yeni Hatırlatma")');
+    await page.waitForSelector('input#title', { timeout: 10000 });
+
+    await page.fill('input#title', 'Test hatırlatması');
+    
+    // Su tipini seç (ilk buton)
+    const waterButton = page.locator('.type-button').first();
+    await waterButton.click();
+    
+    // Saat ekle
+    await page.fill('input#new-time', '09:00');
+    await page.click('button:has-text("Ekle")');
+
+    // Kaydet
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(2000);
+
+    // Liste sayfasında "Test hatırlatması" görünmeli
+    const reminderCard = page.locator('.reminder-card:has-text("Test hatırlatması")');
+    await reminderCard.waitFor({ state: 'visible', timeout: 10000 });
+
+    // Mesaj ekle
+    await reminderCard.locator('button:has-text("Mesajlar")').click();
+    await page.waitForTimeout(1000);
+
+    const messageTextarea = page.locator('.add-message-form textarea');
+    await messageTextarea.fill('Test mesajı');
+    await page.click('button:has-text("Mesaj Ekle")');
+    await page.waitForTimeout(1000);
+
+    // Geri dön
+    await page.click('button:has-text("← Geri")');
+    await page.waitForTimeout(1000);
+
+    // "1 mesaj" görünmeli
+    const messageCount = await page.locator('text=1 mesaj').isVisible();
+    expect(messageCount).toBe(true);
 
     // Offline'a geç ve yenile
     await context.setOffline(true);
     await page.reload();
     await page.waitForLoadState('networkidle');
 
-    // Sayfa hâlâ yüklenmeli (IndexedDB + SW cache)
-    const offlineTitleVisible = await page.locator('h1:has-text("Hatırlatmalar")').isVisible();
-    expect(offlineTitleVisible).toBe(true);
+    // Hatırlatma ve mesaj sayısı hâlâ görünür olmalı
+    const offlineReminder = await page.locator('.reminder-card:has-text("Test hatırlatması")').isVisible();
+    expect(offlineReminder).toBe(true);
 
-    // Add button görünür olmalı
-    const addButtonVisible = await page.locator('button:has-text("+ Yeni Hatırlatma")').isVisible();
-    expect(addButtonVisible).toBe(true);
+    const offlineMessageCount = await page.locator('text=1 mesaj').isVisible();
+    expect(offlineMessageCount).toBe(true);
   });
 });

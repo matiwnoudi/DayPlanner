@@ -14,6 +14,7 @@
   --on-accent: #f0fdfa;
   --border: #e7e5e4;
   --focus: #0f766e;
+  --tabbar-h: 9.5rem; /* Tabbar yüksekliği + padding (~122px measured + margin) */
   font-family: system-ui, sans-serif;
   font-size: 17px;
   line-height: 1.45;
@@ -100,9 +101,8 @@ main {
   flex: 1;
   padding-block-start: 1rem;
   /* Alt menü sabit. İçerik onun altında kalmasın. */
-  /* tabbar: 48px (min-height) + 0.5rem padding-top + 0.5rem padding-bottom + border */
-  /* Toplam: ~60px + safe-area-inset-bottom */
-  padding-block-end: calc(4rem + env(safe-area-inset-bottom, 0px));
+  /* --tabbar-h + 1rem ekstra boşluk */
+  padding-block-end: calc(var(--tabbar-h) + 1rem + env(safe-area-inset-bottom, 0px));
   padding-inline-start: max(1rem, env(safe-area-inset-left, 0px));
   padding-inline-end: max(1rem, env(safe-area-inset-right, 0px));
 }
@@ -192,8 +192,8 @@ main {
 
 .update-prompt {
   position: fixed;
-  /* Alt menünün üstünde (tabbar: ~60px + safe-area) */
-  bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  /* Alt menünün üstünde + 2rem boşluk */
+  bottom: calc(var(--tabbar-h) + 2rem + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
   padding: 1rem;
@@ -952,6 +952,8 @@ main {
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
+  /* Overlay tıklamayı engellemeden kapatmaya izin ver */
+  pointer-events: auto;
 }
 
 .modal-content {
@@ -961,6 +963,8 @@ main {
   max-width: 400px;
   width: 100%;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  /* Modal içeriği tıklanabilir */
+  pointer-events: auto;
 }
 
 .modal-title {

@@ -220,9 +220,6 @@ describe('nextOccurrence - property-based tests', () => {
     const times = ['00:15', '02:30', '09:00', '23:45'];
     const failures: string[] = [];
 
-    // Performans ölçümü
-    let formatToPartsCalls = 0;
-
     // 2026-01-01'den 2027-12-31'e kadar
     const startDate = new Date('2026-01-01T00:00:00Z');
     const endDate = new Date('2027-12-31T23:59:59Z');
@@ -269,23 +266,26 @@ describe('nextOccurrence - property-based tests', () => {
             hour12: false,
           });
           const resultTime = formatter.format(result);
-          formatToPartsCalls++;
 
           if (!times.includes(resultTime)) {
-            // DST gap: var olmayan saat sonrası saatler kabul edilebilir
-            // Örnek: 02:30 var olmayan saat → 03:30 kabul edilebilir
-            const [resultHour, resultMinute] = resultTime.split(':').map(Number);
-            const resultMinutes = resultHour * 60 + resultMinute;
+            // DST gap kontrolü: bilinen DST geçiş günlerinde 02:30 → 03:30 kabul edilebilir
+            const dstGapDates = [
+              { tz: 'America/New_York', date: '2026-03-08', gapTime: '02:30', resultTime: '03:30' },
+              { tz: 'America/New_York', date: '2027-03-14', gapTime: '02:30', resultTime: '03:30' },
+              { tz: 'Europe/Berlin', date: '2026-03-29', gapTime: '02:30', resultTime: '03:30' },
+              { tz: 'Europe/Berlin', date: '2027-03-28', gapTime: '02:30', resultTime: '03:30' },
+            ];
 
-            // times'taki saatlerden herhangi biri gap'te mi?
-            const isGapRelated = times.some((t) => {
-              const [h, m] = t.split(':').map(Number);
-              const timeMinutes = h * 60 + m;
-              // Result, time'dan 60 dakika sonrasına kadar olabilir (DST gap)
-              return resultMinutes > timeMinutes && resultMinutes - timeMinutes <= 60;
-            });
+            const nowDate = now.toISOString().split('T')[0];
+            const isDSTGapException = dstGapDates.some(
+              (gap) =>
+                gap.tz === tz &&
+                nowDate === gap.date &&
+                times.includes(gap.gapTime) &&
+                resultTime === gap.resultTime
+            );
 
-            if (!isGapRelated) {
+            if (!isDSTGapException) {
               failures.push(
                 `${tz} ${now.toISOString()}: resultTime ${resultTime} not in times ${times.join(',')}`,
               );
@@ -300,7 +300,6 @@ describe('nextOccurrence - property-based tests', () => {
     const iterations = 730 * 5 * 4; // 14,600
 
     console.log(`  Property test: ${iterations} iterations in ${duration}s`);
-    console.log(`  formatToParts calls in test: ${formatToPartsCalls}`);
 
     expect(failures).toEqual([]);
   });
