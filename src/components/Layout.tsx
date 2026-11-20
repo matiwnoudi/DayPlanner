@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
 import { tr } from '../i18n/index.ts'
 
 const links = [
@@ -11,6 +12,32 @@ const links = [
 ] as const
 
 export function Layout() {
+  const tabbarRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const tabbar = tabbarRef.current
+    if (!tabbar) return
+
+    // İlk ölçüm
+    const updateTabbarHeight = () => {
+      const height = tabbar.offsetHeight
+      document.documentElement.style.setProperty('--tabbar-h', `${height}px`)
+    }
+
+    updateTabbarHeight()
+
+    // ResizeObserver ile dinamik ölçüm
+    const observer = new ResizeObserver(() => {
+      updateTabbarHeight()
+    })
+
+    observer.observe(tabbar)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
+
   return (
     <div className="app">
       <header className="topbar">
@@ -20,7 +47,7 @@ export function Layout() {
       <main>
         <Outlet />
       </main>
-      <nav className="tabbar" aria-label={tr.navLabel}>
+      <nav ref={tabbarRef} className="tabbar" aria-label={tr.navLabel}>
         <ul>
           {links.map((link) => (
             <li key={link.to}>

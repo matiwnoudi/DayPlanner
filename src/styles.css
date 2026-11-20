@@ -14,7 +14,7 @@
   --on-accent: #f0fdfa;
   --border: #e7e5e4;
   --focus: #0f766e;
-  --tabbar-h: 9.5rem; /* Tabbar yüksekliği + padding (~122px measured + margin) */
+  --tabbar-h: 0px; /* JS ile dinamik olarak ayarlanır (ResizeObserver) */
   font-family: system-ui, sans-serif;
   font-size: 17px;
   line-height: 1.45;
