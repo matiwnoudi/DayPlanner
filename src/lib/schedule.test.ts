@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { nextOccurrence, pickMessage } from './schedule';
+import { nextOccurrence, pickMessage, formatNext } from './schedule';
 
 describe('nextOccurrence', () => {
   it('bugünün sıradaki saatini bulmalı', () => {
@@ -215,17 +215,22 @@ describe('pickMessage', () => {
 
 
 describe('nextOccurrence - property-based tests', () => {
-  it('2026-2027 arası her gün, çoklu saat dilimi, property kontrolleri', { timeout: 10000 }, () => {
+  it('2026-2027 arası her gün, çoklu saat dilimi, property kontrolleri', { timeout: 30000 }, () => {
     const timeZones = ['Europe/Berlin', 'Asia/Tehran', 'America/New_York', 'Asia/Kolkata', 'UTC'];
     const times = ['00:15', '02:30', '09:00', '23:45'];
     const failures: string[] = [];
+
+    // Performans ölçümü
+    let formatToPartsCalls = 0;
 
     // 2026-01-01'den 2027-12-31'e kadar
     const startDate = new Date('2026-01-01T00:00:00Z');
     const endDate = new Date('2027-12-31T23:59:59Z');
 
-    // Her gün için test (performance için her 7 günde bir)
-    for (let day = startDate; day <= endDate; day.setUTCDate(day.getUTCDate() + 7)) {
+    const startTime = Date.now();
+
+    // HER GÜN için test
+    for (let day = startDate; day <= endDate; day.setUTCDate(day.getUTCDate() + 1)) {
       for (const tz of timeZones) {
         // Her gün için farklı now zamanları
         const nows = [
@@ -264,24 +269,25 @@ describe('nextOccurrence - property-based tests', () => {
             hour12: false,
           });
           const resultTime = formatter.format(result);
+          formatToPartsCalls++;
 
           if (!times.includes(resultTime)) {
-            // Var olmayan saat kontrolü (DST gap)
-            // Gap sonrası saat olup olmadığını kontrol et
+            // DST gap: var olmayan saat sonrası saatler kabul edilebilir
+            // Örnek: 02:30 var olmayan saat → 03:30 kabul edilebilir
             const [resultHour, resultMinute] = resultTime.split(':').map(Number);
             const resultMinutes = resultHour * 60 + resultMinute;
 
-            // times'daki en yakın saati bul
-            const timeMinutes = times.map((t) => {
+            // times'taki saatlerden herhangi biri gap'te mi?
+            const isGapRelated = times.some((t) => {
               const [h, m] = t.split(':').map(Number);
-              return h * 60 + m;
+              const timeMinutes = h * 60 + m;
+              // Result, time'dan 60 dakika sonrasına kadar olabilir (DST gap)
+              return resultMinutes > timeMinutes && resultMinutes - timeMinutes <= 60;
             });
 
-            const isAfterGap = timeMinutes.some((tm) => resultMinutes > tm && resultMinutes - tm <= 120);
-
-            if (!isAfterGap) {
+            if (!isGapRelated) {
               failures.push(
-                `${tz} ${now.toISOString()}: result time ${resultTime} not in times and not after gap`,
+                `${tz} ${now.toISOString()}: resultTime ${resultTime} not in times ${times.join(',')}`,
               );
             }
           }
@@ -289,12 +295,91 @@ describe('nextOccurrence - property-based tests', () => {
       }
     }
 
-    // Başarısız örnekleri yazdır (ilk 10)
-    if (failures.length > 0) {
-      console.log(`Property test failures (${failures.length} total):`);
-      failures.slice(0, 10).forEach((f) => console.log(`  ${f}`));
-    }
+    const endTime = Date.now();
+    const duration = ((endTime - startTime) / 1000).toFixed(2);
+    const iterations = 730 * 5 * 4; // 14,600
+
+    console.log(`  Property test: ${iterations} iterations in ${duration}s`);
+    console.log(`  formatToParts calls in test: ${formatToPartsCalls}`);
 
     expect(failures).toEqual([]);
+  });
+});
+
+describe('formatNext', () => {
+  it('kapalı hatırlatma için "Kapalı" döndürmeli', () => {
+    const nextDate = new Date('2027-03-15T13:00:00Z');
+    const now = new Date('2027-03-15T10:00:00Z');
+    const result = formatNext(nextDate, now, false, 'UTC');
+
+    expect(result).toBe('Kapalı');
+  });
+
+  it('nextDate null ise boş string döndürmeli', () => {
+    const now = new Date('2027-03-15T10:00:00Z');
+    const result = formatNext(null, now, true, 'UTC');
+
+    expect(result).toBe('');
+  });
+
+  it('bugün için "Bugün HH:mm" döndürmeli', () => {
+    // now: 2027-03-15T10:00:00Z (UTC 10:00)
+    // nextDate: 2027-03-15T13:00:00Z (UTC 13:00)
+    const now = new Date('2027-03-15T10:00:00Z');
+    const nextDate = new Date('2027-03-15T13:00:00Z');
+    const result = formatNext(nextDate, now, true, 'UTC');
+
+    expect(result).toBe('Bugün 13:00');
+  });
+
+  it('yarın için "Yarın HH:mm" döndürmeli', () => {
+    // now: 2027-03-15T22:00:00Z (UTC 22:00)
+    // nextDate: 2027-03-16T09:00:00Z (UTC 09:00, ertesi gün)
+    const now = new Date('2027-03-15T22:00:00Z');
+    const nextDate = new Date('2027-03-16T09:00:00Z');
+    const result = formatNext(nextDate, now, true, 'UTC');
+
+    expect(result).toBe('Yarın 09:00');
+  });
+
+  it('saat dilimi ile bugün/yarın tespiti yapmalı (Europe/Berlin)', () => {
+    // now: 2027-03-15T22:00:00Z (Berlin 23:00, 15 Mart)
+    // nextDate: 2027-03-15T23:00:00Z (Berlin 00:00, 16 Mart - yarın)
+    const now = new Date('2027-03-15T22:00:00Z');
+    const nextDate = new Date('2027-03-15T23:00:00Z');
+    const result = formatNext(nextDate, now, true, 'Europe/Berlin');
+
+    expect(result).toBe('Yarın 00:00');
+  });
+
+  it('saat dilimi ile bugün tespiti yapmalı (Asia/Tehran)', () => {
+    // now: 2027-03-15T08:00:00Z (Tehran 11:30, 15 Mart)
+    // nextDate: 2027-03-15T09:30:00Z (Tehran 13:00, 15 Mart - bugün)
+    const now = new Date('2027-03-15T08:00:00Z');
+    const nextDate = new Date('2027-03-15T09:30:00Z');
+    const result = formatNext(nextDate, now, true, 'Asia/Tehran');
+
+    expect(result).toBe('Bugün 13:00');
+  });
+
+  it('gece yarısı geçişinde yarın tespiti yapmalı', () => {
+    // now: 2027-03-15T23:30:00Z (UTC 23:30, 15 Mart)
+    // nextDate: 2027-03-16T00:15:00Z (UTC 00:15, 16 Mart - yarın)
+    const now = new Date('2027-03-15T23:30:00Z');
+    const nextDate = new Date('2027-03-16T00:15:00Z');
+    const result = formatNext(nextDate, now, true, 'UTC');
+
+    expect(result).toBe('Yarın 00:15');
+  });
+
+  it('DST geçişinde doğru formatlamalı (Europe/Berlin)', () => {
+    // DST ileri geçişi: 2027-03-28 02:00 CEST → 03:00 CEST
+    // now: 2027-03-28T00:00:00Z (Berlin 01:00 CET)
+    // nextDate: 2027-03-28T01:30:00Z (Berlin 03:30 CEST - bugün)
+    const now = new Date('2027-03-28T00:00:00Z');
+    const nextDate = new Date('2027-03-28T01:30:00Z');
+    const result = formatNext(nextDate, now, true, 'Europe/Berlin');
+
+    expect(result).toBe('Bugün 03:30');
   });
 });

@@ -13,6 +13,7 @@ import {
   updateMessage,
   deleteMessage,
 } from '../db/reminders-repo.ts'
+import { nextOccurrence, formatNext } from '../lib/schedule.ts'
 
 type ReminderFormData = {
   title: string
@@ -204,6 +205,12 @@ function ReminderCard({
     supplement: '💊',
   }[reminder.type]
 
+  // Sıradaki hatırlatmayı hesapla
+  const now = new Date()
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const next = nextOccurrence(now, reminder.times, timeZone)
+  const nextText = formatNext(next, now, reminder.enabled, timeZone)
+
   return (
     <div className={`reminder-card ${reminder.enabled ? '' : 'disabled'}`}>
       <div className="reminder-card-header">
@@ -227,6 +234,11 @@ function ReminderCard({
             {time}
           </span>
         ))}
+      </div>
+
+      <div className="reminder-next">
+        <span className="next-label">Sıradaki:</span>
+        <span className="next-value">{nextText || '—'}</span>
       </div>
 
       <div className="reminder-stats">
@@ -319,6 +331,7 @@ function ReminderForm({ initialData, onSave, onCancel }: ReminderFormProps) {
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          onFocus={(e) => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' })}
           placeholder={tr.reminders.titlePlaceholder}
           className="form-input"
         />
@@ -359,6 +372,7 @@ function ReminderForm({ initialData, onSave, onCancel }: ReminderFormProps) {
             type="time"
             value={newTime}
             onChange={(e) => setNewTime(e.target.value)}
+            onFocus={(e) => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' })}
             className="form-input"
           />
           <button
@@ -485,6 +499,7 @@ function MessageList({ reminderId, onBack, onShowModal }: MessageListProps) {
         <textarea
           value={newMessageText}
           onChange={(e) => setNewMessageText(e.target.value)}
+          onFocus={(e) => e.currentTarget.scrollIntoView({ block: 'center', behavior: 'smooth' })}
           placeholder={tr.reminders.messagePlaceholder}
           className="message-textarea"
           rows={3}

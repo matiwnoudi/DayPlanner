@@ -100,7 +100,9 @@ main {
   flex: 1;
   padding-block-start: 1rem;
   /* Alt menü sabit. İçerik onun altında kalmasın. */
-  padding-block-end: calc(9.5rem + env(safe-area-inset-bottom, 0px));
+  /* tabbar: 48px (min-height) + 0.5rem padding-top + 0.5rem padding-bottom + border */
+  /* Toplam: ~60px + safe-area-inset-bottom */
+  padding-block-end: calc(4rem + env(safe-area-inset-bottom, 0px));
   padding-inline-start: max(1rem, env(safe-area-inset-left, 0px));
   padding-inline-end: max(1rem, env(safe-area-inset-right, 0px));
 }
@@ -190,7 +192,8 @@ main {
 
 .update-prompt {
   position: fixed;
-  bottom: var(--safe-area-inset-bottom, 0);
+  /* Alt menünün üstünde (tabbar: ~60px + safe-area) */
+  bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
   padding: 1rem;
@@ -198,6 +201,8 @@ main {
   display: flex;
   justify-content: center;
   animation: slideUp 0.3s ease-out;
+  /* Overlay tıklamayı engellemesin */
+  pointer-events: none;
 }
 
 @keyframes slideUp {
@@ -220,6 +225,8 @@ main {
   max-width: 400px;
   width: 100%;
   border: 1px solid var(--border-color);
+  /* Sadece kutu ve düğmeler tıklanabilir */
+  pointer-events: auto;
 }
 
 .update-prompt-content p {
@@ -650,6 +657,25 @@ main {
   font-weight: 500;
 }
 
+.reminder-next {
+  margin-block-end: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.next-label {
+  color: var(--muted);
+  margin-inline-end: 0.5rem;
+}
+
+.next-value {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.reminder-card.disabled .next-value {
+  color: var(--muted);
+}
+
 .reminder-stats {
   margin-block-end: 0.75rem;
   font-size: 0.875rem;
@@ -741,15 +767,17 @@ main {
   color: var(--text);
   font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
 }
 
-.type-button:hover {
-  border-color: var(--accent);
+@media (hover: hover) {
+  .type-button:hover {
+    border-color: var(--accent);
+  }
 }
 
 .type-button.active {

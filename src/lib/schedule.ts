@@ -33,12 +33,7 @@ export function nextOccurrence(
   const uniqueSortedTimes = Array.from(new Set(times)).sort();
 
   // now'ın saat dilimindeki yerel tarihini al
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
+  const formatter = getDateFormatter(timeZone);
   const parts = formatter.formatToParts(now);
   const nowYear = parseInt(parts.find((p) => p.type === 'year')!.value);
   const nowMonth = parseInt(parts.find((p) => p.type === 'month')!.value);
@@ -78,16 +73,7 @@ export function nextOccurrence(
  */
 function getOffsetMs(timeZone: string, instant: Date): number {
   // instant'ın saat dilimindeki yerel tarih/saatini al
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
+  const formatter = getDateTimeFormatter(timeZone);
   const parts = formatter.formatToParts(instant);
   const year = parseInt(parts.find((p) => p.type === 'year')!.value);
   const month = parseInt(parts.find((p) => p.type === 'month')!.value);
@@ -148,15 +134,7 @@ function wallToInstant(
     const candidateInstant = new Date(wallAsUTC - offset);
 
     // Adayın yerel tarih/saatini kontrol et
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    });
+    const formatter = getDateTimeFormatter(timeZone);
     const parts = formatter.formatToParts(candidateInstant);
     const cYear = parseInt(parts.find((p) => p.type === 'year')!.value);
     const cMonth = parseInt(parts.find((p) => p.type === 'month')!.value);
@@ -178,6 +156,134 @@ function wallToInstant(
 
   // Geçerli aday yok (var olmayan saat): önceki offset'i kullan
   return new Date(wallAsUTC - offsetBefore);
+}
+
+/**
+ * Sıradaki hatırlatma zamanını formatlar
+ *
+ * @param nextDate - Sıradaki hatırlatma zamanı (nextOccurrence'tan)
+ * @param now - Şu anki zaman
+ * @param enabled - Hatırlatma açık mı
+ * @param timeZone - IANA saat dilimi
+ * @returns "Kapalı" | "Bugün HH:mm" | "Yarın HH:mm" | ""
+ *
+ * Davranış:
+ * - enabled false ise "Kapalı"
+ * - nextDate null ise ""
+ * - nextDate bugünse "Bugün HH:mm"
+ * - nextDate yarınsa "Yarın HH:mm"
+ * - Diğer durumlarda "" (olmaması gereken)
+ */
+export function formatNext(
+  nextDate: Date | null,
+  now: Date,
+  enabled: boolean,
+  timeZone: string,
+): string {
+  if (!enabled) {
+    return 'Kapalı';
+  }
+
+  if (!nextDate) {
+    return '';
+  }
+
+  // now ve nextDate'in saat dilimindeki tarihlerini al
+  const dateFormatter = getDateFormatter(timeZone);
+  const timeFormatter = getTimeFormatter(timeZone);
+
+  const nowParts = dateFormatter.formatToParts(now);
+  const nextParts = dateFormatter.formatToParts(nextDate);
+
+  const nowYear = parseInt(nowParts.find((p) => p.type === 'year')!.value);
+  const nowMonth = parseInt(nowParts.find((p) => p.type === 'month')!.value);
+  const nowDay = parseInt(nowParts.find((p) => p.type === 'day')!.value);
+
+  const nextYear = parseInt(nextParts.find((p) => p.type === 'year')!.value);
+  const nextMonth = parseInt(nextParts.find((p) => p.type === 'month')!.value);
+  const nextDay = parseInt(nextParts.find((p) => p.type === 'day')!.value);
+
+  // Yarını hesapla
+  const tomorrowDate = new Date(Date.UTC(nowYear, nowMonth - 1, nowDay));
+  tomorrowDate.setUTCDate(tomorrowDate.getUTCDate() + 1);
+  const tomorrowYear = tomorrowDate.getUTCFullYear();
+  const tomorrowMonth = tomorrowDate.getUTCMonth() + 1;
+  const tomorrowDay = tomorrowDate.getUTCDate();
+
+  // Saati formatla (HH:mm)
+  const timeParts = timeFormatter.formatToParts(nextDate);
+  const hour = timeParts.find((p) => p.type === 'hour')!.value;
+  const minute = timeParts.find((p) => p.type === 'minute')!.value;
+  const timeStr = `${hour}:${minute}`;
+
+  // Bugün mü?
+  if (nextYear === nowYear && nextMonth === nowMonth && nextDay === nowDay) {
+    return `Bugün ${timeStr}`;
+  }
+
+  // Yarın mı?
+  if (nextYear === tomorrowYear && nextMonth === tomorrowMonth && nextDay === tomorrowDay) {
+    return `Yarın ${timeStr}`;
+  }
+
+  // Diğer durumlar (olmaması gereken)
+  return '';
+}
+
+/**
+ * Intl.DateTimeFormat önbelleği (saat dilimi başına)
+ */
+const dateFormatterCache = new Map<string, Intl.DateTimeFormat>();
+const timeFormatterCache = new Map<string, Intl.DateTimeFormat>();
+const dateTimeFormatterCache = new Map<string, Intl.DateTimeFormat>();
+
+function getDateFormatter(timeZone: string): Intl.DateTimeFormat {
+  if (!dateFormatterCache.has(timeZone)) {
+    dateFormatterCache.set(
+      timeZone,
+      new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }),
+    );
+  }
+  return dateFormatterCache.get(timeZone)!;
+}
+
+function getTimeFormatter(timeZone: string): Intl.DateTimeFormat {
+  if (!timeFormatterCache.has(timeZone)) {
+    timeFormatterCache.set(
+      timeZone,
+      new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }),
+    );
+  }
+  return timeFormatterCache.get(timeZone)!;
+}
+
+function getDateTimeFormatter(timeZone: string): Intl.DateTimeFormat {
+  if (!dateTimeFormatterCache.has(timeZone)) {
+    dateTimeFormatterCache.set(
+      timeZone,
+      new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      }),
+    );
+  }
+  return dateTimeFormatterCache.get(timeZone)!;
 }
 
 /**

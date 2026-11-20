@@ -21,6 +21,16 @@ export function UpdatePrompt() {
   } = useRegisterSW({
     onRegistered(registration) {
       console.log('Service Worker kayıtlı:', registration);
+      
+      // Güncelleme kontrolü sadece online ise yap
+      if (registration && navigator.onLine) {
+        // Periyodik güncelleme kontrolü (1 saatte bir)
+        setInterval(() => {
+          if (navigator.onLine) {
+            registration.update();
+          }
+        }, 60 * 60 * 1000);
+      }
     },
     onRegisterError(error) {
       console.error('Service Worker kayıt hatası:', error);
@@ -35,8 +45,14 @@ export function UpdatePrompt() {
       setToastType('update');
     } else if (offlineReady) {
       setToastType('offline-ready');
+      // Offline-ready mesajı 6 saniye sonra otomatik kapansın
+      const timer = setTimeout(() => {
+        setToastType(null);
+        setOfflineReady(false);
+      }, 6000);
+      return () => clearTimeout(timer);
     }
-  }, [needRefresh, offlineReady]);
+  }, [needRefresh, offlineReady, setOfflineReady]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const close = () => {

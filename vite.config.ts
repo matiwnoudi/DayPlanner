@@ -70,12 +70,13 @@ export default defineConfig(({ mode }) => {
 
         // Workbox seçenekleri - injectionPoint varsayılan (self.__WB_MANIFEST) kullanılır
         injectManifest: {
-          // Precache patterns: JS/CSS/HTML + favicon.svg
+          // Precache patterns: JS/CSS/HTML
           globPatterns: ['**/*.{js,css,html}'],
           // manifest.webmanifest ve ikonlar manifest.icons'dan otomatik eklenir
-          // favicon.svg'yi manuel ekle
+          // favicon.svg ve apple-touch-icon.png'yi manuel ekle
           additionalManifestEntries: [
             { url: 'favicon.svg', revision: null },
+            { url: 'apple-touch-icon.png', revision: null },
           ],
         },
       }),

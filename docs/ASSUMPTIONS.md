@@ -66,3 +66,22 @@ Bu adımda iPhone veya Safari’ye özel bir davranış varsayılmadı.
 - Uygulama günlerce açılmazsa SW'nin sonlandırılıp sonlandırılmadığı
 - Quota exceeded hatası (düşük disk)
 - İran bağlantı testi (VPN'siz/VPN'li erişim)
+
+
+## Bilinen Sorunlar
+
+### Eski Kurulumlarda Seed Verisi
+- İlk kurulumda (pre-release versiyonları) seed hatırlatmasının başlığında yazım hatası olabilir
+- Seed verisi sadece bir kez çalıştığı için otomatik düzelme olmaz
+- Kullanıcı elle düzenleme yaparak düzeltebilir veya hatırlatmayı silip yeniden oluşturabilir
+- Bu sorun yeni kurulumlarda yoktur
+
+
+## Açılış Ağ İsteği (Doğrulanmadı)
+
+### Service Worker Güncelleme Kontrolü
+- `useRegisterSW` hook'u uygulama açılışında otomatik güncelleme kontrolü yapar
+- iOS'ta offline durumdayken "Turn Off Airplane Mode or Use WLAN" uyarısı gösterilebilir
+- **Düzeltme**: Güncelleme kontrolü sadece `navigator.onLine === true` ise yapılıyor
+- **Durum**: Gerçek iPhone'da henüz doğrulanmadı
+- Periyodik kontrol (1 saatte bir) de aynı şekilde online kontrolü yapıyor
