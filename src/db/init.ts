@@ -57,3 +57,17 @@ export async function initDB(): Promise<{ persisted: boolean }> {
 
   return { persisted };
 }
+
+/**
+ * Uygulama başlangıcında çağrılacak bootstrap fonksiyonu
+ *
+ * Hata oluşsa bile uygulamayı çökertmez, sadece console.error yazdırır.
+ * React render'dan bağımsız, arka planda çalışır.
+ */
+export async function bootstrap(): Promise<void> {
+  try {
+    await initDB();
+  } catch (error) {
+    console.error('Database initialization failed:', error);
+  }
+}

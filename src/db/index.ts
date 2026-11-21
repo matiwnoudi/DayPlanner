@@ -6,5 +6,5 @@
 
 export { db } from './schema';
 export type { Reminder, Message, EventLog, Checklist, Meta, ReminderType } from './schema';
-export { initDB } from './init';
+export { initDB, bootstrap } from './init';
 export { seedDatabase } from './seed';

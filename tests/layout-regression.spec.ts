@@ -56,10 +56,47 @@ test.describe('Layout Regression', () => {
       await page.waitForTimeout(300);
     }
 
-    // Sayfanın EN ALTINA kaydır
-    await page.evaluate(() => {
+    // Overflow kapsayıcısını dinamik bul ve EN ALTINA kaydır
+    const scrollInfo = await page.evaluate(() => {
+      // Tüm elemanları tara
+      const allElements = Array.from(document.querySelectorAll('*')) as HTMLElement[];
+
+      const scrollableElement = allElements.find((el) => {
+        const style = window.getComputedStyle(el);
+        const overflowY = style.overflowY;
+        const hasOverflow = el.scrollHeight > el.clientHeight;
+
+        return (overflowY === 'auto' || overflowY === 'scroll') && hasOverflow;
+      });
+
+      if (scrollableElement) {
+        // Kapsayıcıyı en alta kaydır
+        scrollableElement.scrollTop = scrollableElement.scrollHeight;
+
+        return {
+          found: true,
+          selector: scrollableElement.className || scrollableElement.tagName,
+          scrollTop: scrollableElement.scrollTop,
+          scrollHeight: scrollableElement.scrollHeight,
+          clientHeight: scrollableElement.clientHeight,
+        };
+      }
+
+      // Bulunamazsa window'u kaydır
       window.scrollTo(0, document.body.scrollHeight);
+
+      return {
+        found: false,
+        selector: 'window',
+        scrollTop: window.scrollY,
+        scrollHeight: document.body.scrollHeight,
+        clientHeight: window.innerHeight,
+      };
     });
+
+    console.log('=== SCROLL INFO ===');
+    console.log(JSON.stringify(scrollInfo, null, 2));
+
     await page.waitForTimeout(500);
 
     // Ölçümleri al
@@ -140,6 +177,13 @@ test.describe('Layout Regression', () => {
     console.log(`Save button bottom: ${measurements.saveButton.rect?.bottom}`);
     console.log(`Cancel button bottom: ${measurements.cancelButton.rect?.bottom}`);
     console.log(`Tabbar top: ${measurements.tabbar.rect?.top}`);
+
+    // Boşluk hesapla
+    const saveGap = measurements.tabbar.rect!.top - measurements.saveButton.rect!.bottom;
+    const cancelGap = measurements.tabbar.rect!.top - measurements.cancelButton.rect!.bottom;
+
+    console.log(`Gap between Save button and tabbar: ${saveGap}px`);
+    console.log(`Gap between Cancel button and tabbar: ${cancelGap}px`);
     console.log(`Save button at center is same element: ${measurements.saveButton.elementAtCenter?.isSameElement}`);
     console.log(`Cancel button at center is same element: ${measurements.cancelButton.elementAtCenter?.isSameElement}`);
 
@@ -148,9 +192,9 @@ test.describe('Layout Regression', () => {
     expect(measurements.cancelButton.rect).not.toBeNull();
     expect(measurements.tabbar.rect).not.toBeNull();
 
-    // Düğme.bottom <= tabbar.top
-    expect(measurements.saveButton.rect!.bottom).toBeLessThanOrEqual(measurements.tabbar.rect!.top);
-    expect(measurements.cancelButton.rect!.bottom).toBeLessThanOrEqual(measurements.tabbar.rect!.top);
+    // Boşluk >= 8px olmalı
+    expect(saveGap).toBeGreaterThanOrEqual(8);
+    expect(cancelGap).toBeGreaterThanOrEqual(8);
 
     // elementFromPoint(düğme merkezi) düğmenin kendisi olmalı
     expect(measurements.saveButton.elementAtCenter?.isSameElement).toBe(true);

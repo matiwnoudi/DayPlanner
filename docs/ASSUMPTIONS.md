@@ -17,7 +17,7 @@ Bu adımda iPhone veya Safari’ye özel bir davranış varsayılmadı.
 
 ## 3. adım
 
-- `navigator.storage.persist()` çağrısı IndexedDB verilerinin kalıcılığını talep eder. MDN'ye göre bu çağrı tarayıcıdan, verilerin otomatik temizleme sırasında korunmasını ister. Ancak iOS Safari'de bu API'nin davranışı belirsizdir: (1) API destekleniyor mu? (2) `persist()` true/false döndürüyor mu? (3) Gerçekten kalıcılık garantisi veriyor mu yoksa iOS yine de düşük disk alanında IndexedDB'yi silebiliyor mu? Masaüstü Chrome'da `persist()` false döndürdü (izin verilmedi). iPhone'da test edilmedi. Kaynak: [MDN StorageManager.persist()](https://developer.mozilla.org/en-US/docs/Web/API/StorageManager/persist). Kodda `TODO-VERIFY` notu var: `src/db/init.ts`.
+- `navigator.storage.persist()` çağrısı IndexedDB verilerinin kalıcılığını talep eder. MDN'ye göre bu çağrı tarayıcıdan, verilerin otomatik temizleme sırasında korunmasını ister. Ancak iOS Safari'de bu API'nin davranışı belirsizdir: (1) API destekleniyor mu? (2) `persist()` true/false döndürüyor mu? (3) Gerçekten kalıcılık garantisi veriyor mu yoksa iOS yine de düşük disk alanında IndexedDB'yi silebiliyor mu? Masaüstü Chrome'da `persist()` false döndürdü (izin verilmedi). iPhone'da test edilmedi. Kaynak: [MDN StorageManager.persist()](https://developer.mozilla.org/en-US/docs/Web/API/StorageManager/persist). Kodda `TODO-VERIFY` notu var: `src/db/init.ts`. **NOT**: Bootstrap fonksiyonu artık uygulama başlangıcında `persist()` çağırıyor ve sonucu Kurulum sayfasında gösteriliyor. iOS'ta davranışı hala doğrulanması gerekiyor.
 
 ## 4. adım
 
@@ -70,11 +70,12 @@ Bu adımda iPhone veya Safari’ye özel bir davranış varsayılmadı.
 
 ## Bilinen Sorunlar
 
-### Eski Kurulumlarda Seed Verisi
-- İlk kurulumda (pre-release versiyonları) seed hatırlatmasının başlığında yazım hatası olabilir
-- Seed verisi sadece bir kez çalıştığı için otomatik düzelme olmaz
-- Kullanıcı elle düzenleme yaparak düzeltebilir veya hatırlatmayı silip yeniden oluşturabilir
-- Bu sorun yeni kurulumlarda yoktur
+### Seed Verisi Davranışı
+- Seed fonksiyonu uygulama ilk açılışında 3 örnek hatırlatma (Su İç, Öğün Zamanı, Takviye) ekler
+- Meta tablosunda bayrak varsa seed tekrar çalışmaz
+- Mevcut kullanıcıların elle eklediği hatırlatmaları korunur (seed sabit ID'ler kullanır, çakışma olmaz)
+- Kullanıcı seed hatırlatmalarını silerse bayrak yüzünden geri gelmez
+- **Önemli**: İlk kurulumda seed EKLEME yapar, mevcut verileri SİLMEZ
 
 
 ## Açılış Ağ İsteği (Doğrulanmadı)

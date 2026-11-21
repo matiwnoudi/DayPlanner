@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:offline": "playwright test tests/offline.spec.ts",
+    "test:e2e": "playwright test",
     "format": "prettier --write .",
     "generate-icons": "node scripts/generate-icons.mjs"
   },
