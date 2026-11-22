@@ -86,3 +86,37 @@ Bu adımda iPhone veya Safari’ye özel bir davranış varsayılmadı.
 - **Düzeltme**: Güncelleme kontrolü sadece `navigator.onLine === true` ise yapılıyor
 - **Durum**: Gerçek iPhone'da henüz doğrulanmadı
 - Periyodik kontrol (1 saatte bir) de aynı şekilde online kontrolü yapıyor
+
+
+## Takvim (.ics) İndirme/Paylaşma (iOS PWA Standalone)
+
+### Teslim Yöntemleri
+Takvim dosyası üç yolla teslim edilmeye çalışılır:
+
+1. **Web Share API (File paylaşımı)**
+   - `navigator.canShare({files: [...]})` ile kontrol edilir
+   - File objesi: `text/calendar` MIME type
+   - iOS Safari standalone'da çalışıyor mu? → **TODO-VERIFY**
+   - AbortError (kullanıcı vazgeçti) hata sayılmaz
+   - Kaynak: [MDN Web Share API](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/share)
+
+2. **Blob URL + download attribute**
+   - `<a href="blob:..." download="rutin-deneme.ics">` ile indirilir
+   - Safari'de download attribute çalışıyor mu? → **TODO-VERIFY**
+   - .ics dosyası doğru MIME type ile sunuluyor mu?
+   - Takvim uygulaması otomatik açılıyor mu? → **TODO-VERIFY**
+
+3. **Metin gösterimi (kopyala-yapıştır)**
+   - `<textarea>` içinde seçilebilir metin
+   - Kullanıcı kopyalayıp Takvim uygulamasına manuel yapıştırabilir
+   - En güvenilir yöntem ama manuel → **TODO-VERIFY**
+
+### X-WR-CALNAME Davranışı
+- `X-WR-CALNAME: Rutin Deneme` takvim adını belirtir
+- iOS Takvim uygulaması bu alanı yok sayabilir
+- Kullanıcı içe aktarırken takvim adını manuel seçer → **TODO-VERIFY**
+- Kaynak: [Apple Calendar .ics](https://support.apple.com/guide/calendar/welcome/mac)
+
+### Kod Referansları
+- `src/lib/ics.ts` - buildIcs() fonksiyonu: // TODO-VERIFY: iOS teslim davranışı
+- `src/pages/Takvim.tsx` - Teslim yöntemleri: // TODO-VERIFY: Web Share, Blob download, textarea

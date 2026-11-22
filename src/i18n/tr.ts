@@ -131,6 +131,15 @@ export const tr = {
       iosStandalone: 'iOS + Standalone (kurulu)',
     },
   },
+  takvim: {
+    title: 'Takvim (.ics)',
+    downloadDemo: 'Deneme takvimi indir',
+    instructions:
+      "Dosyayı Takvim'e ekle (ayrı bir takvim seç: Rutin Deneme, böylece sonra kolayca silersin). İlk uyarı 10 dakika sonra. Uçak modunu aç, uygulamayı kapat ve uyarıları bekle. Hangi uyarının ses verdiğini, kilit ekranında görünüp görünmediğini not et.",
+    deliveryMethodShare: 'Paylaşım penceresi',
+    deliveryMethodDownload: 'İndirme bağlantısı',
+    deliveryMethodText: 'Metin (kopyala-yapıştır)',
+  },
 } as const;
 
 export type Dictionary = typeof tr;
