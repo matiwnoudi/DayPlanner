@@ -71,6 +71,7 @@ export function TakvimPage() {
 
           setDeliveryMethod('share');
           return;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
           // AbortError: kullanıcı vazgeçti (hata sayma)
           if (err.name === 'AbortError') {
@@ -102,6 +103,7 @@ export function TakvimPage() {
 
       // 3. Metin göster (seçilebilir textarea)
       setDeliveryMethod('text');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.message || 'Bir hata oluştu');
     }

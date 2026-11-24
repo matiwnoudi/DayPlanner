@@ -12,6 +12,9 @@ import {
   addMessage,
   updateMessage,
   deleteMessage,
+  addCompletion,
+  deleteCompletion,
+  listCompletions,
 } from './reminders-repo';
 import { db } from './schema';
 
@@ -19,6 +22,7 @@ import { db } from './schema';
 beforeEach(async () => {
   await db.reminders.clear();
   await db.messages.clear();
+  await db.completions.clear();
 });
 
 describe('createReminder', () => {
@@ -251,5 +255,237 @@ describe('deleteMessage', () => {
 
   it('mesaj bulunamazsa hata fırlatmalı', async () => {
     await expect(deleteMessage('non-existent-id')).rejects.toThrow('Mesaj bulunamadı');
+  });
+});
+
+// ============================================================================
+// COMPLETIONS TESTLERI
+// ============================================================================
+
+describe('addCompletion', () => {
+  it('should add a valid completion', async () => {
+    const id = await addCompletion({
+      date: '2026-11-22',
+      category: 'water',
+      amount: 250,
+      note: 'Test note',
+      source: 'manual',
+    });
+
+    expect(id).toBeTruthy();
+
+    const completion = await db.completions.get(id);
+    expect(completion).toBeDefined();
+    expect(completion!.date).toBe('2026-11-22');
+    expect(completion!.category).toBe('water');
+    expect(completion!.amount).toBe(250);
+    expect(completion!.note).toBe('Test note');
+    expect(completion!.source).toBe('manual');
+    expect(completion!.at).toMatch(/^\d{4}-\d{2}-\d{2}T/); // ISO format
+  });
+
+  it('should use current time for at field if not provided', async () => {
+    const before = Date.now();
+    const id = await addCompletion({
+      date: '2026-11-22',
+      category: 'meal',
+      source: 'reminder',
+    });
+    const after = Date.now();
+
+    const completion = await db.completions.get(id);
+    const completionTime = new Date(completion!.at).getTime();
+    expect(completionTime).toBeGreaterThanOrEqual(before);
+    expect(completionTime).toBeLessThanOrEqual(after);
+  });
+
+  it('should throw error for invalid date format', async () => {
+    await expect(
+      addCompletion({
+        date: '22-11-2026', // Yanlış format
+        category: 'water',
+        source: 'manual',
+      }),
+    ).rejects.toThrow('Invalid date format');
+  });
+
+  it('should throw error for invalid calendar date', async () => {
+    await expect(
+      addCompletion({
+        date: '2026-02-30', // Geçersiz takvim tarihi
+        category: 'water',
+        source: 'manual',
+      }),
+    ).rejects.toThrow('Invalid calendar date');
+  });
+
+  it('should throw error for invalid category', async () => {
+    await expect(
+      addCompletion({
+        date: '2026-11-22',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        category: 'invalid' as any,
+        source: 'manual',
+      }),
+    ).rejects.toThrow('Invalid category');
+  });
+
+  it('should throw error for negative amount', async () => {
+    await expect(
+      addCompletion({
+        date: '2026-11-22',
+        category: 'water',
+        amount: -10,
+        source: 'manual',
+      }),
+    ).rejects.toThrow('Amount must be a non-negative number');
+  });
+
+  it('should throw error for note longer than 500 characters', async () => {
+    await expect(
+      addCompletion({
+        date: '2026-11-22',
+        category: 'water',
+        note: 'a'.repeat(501),
+        source: 'manual',
+      }),
+    ).rejects.toThrow('Note must be a string with maximum 500 characters');
+  });
+
+  it('should throw error for invalid source', async () => {
+    await expect(
+      addCompletion({
+        date: '2026-11-22',
+        category: 'water',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        source: 'invalid' as any,
+      }),
+    ).rejects.toThrow('Invalid source');
+  });
+});
+
+describe('deleteCompletion', () => {
+  it('should delete a completion', async () => {
+    const id = await addCompletion({
+      date: '2026-11-22',
+      category: 'water',
+      source: 'manual',
+    });
+
+    await deleteCompletion(id);
+
+    const completion = await db.completions.get(id);
+    expect(completion).toBeUndefined();
+  });
+});
+
+describe('listCompletions', () => {
+  beforeEach(async () => {
+    // Test verileri ekle
+    await addCompletion({
+      date: '2026-02-28',
+      category: 'water',
+      reminderId: 'reminder-1',
+      source: 'manual',
+    });
+
+    await addCompletion({
+      date: '2026-03-01',
+      category: 'meal',
+      reminderId: 'reminder-2',
+      source: 'manual',
+    });
+
+    await addCompletion({
+      date: '2026-03-02',
+      category: 'water',
+      reminderId: 'reminder-1',
+      source: 'reminder',
+    });
+
+    await addCompletion({
+      date: '2026-03-05',
+      category: 'supplement',
+      source: 'manual',
+    });
+  });
+
+  it('should list completions in date range', async () => {
+    const completions = await listCompletions({
+      startDate: '2026-03-01',
+      endDate: '2026-03-02',
+    });
+
+    expect(completions).toHaveLength(2);
+    expect(completions.map((c) => c.date).sort()).toEqual(['2026-03-01', '2026-03-02']);
+  });
+
+  it('should filter by category', async () => {
+    const completions = await listCompletions({
+      startDate: '2026-02-28',
+      endDate: '2026-03-05',
+      category: 'water',
+    });
+
+    expect(completions).toHaveLength(2);
+    expect(completions.every((c) => c.category === 'water')).toBe(true);
+  });
+
+  it('should filter by reminderId', async () => {
+    const completions = await listCompletions({
+      startDate: '2026-02-28',
+      endDate: '2026-03-05',
+      reminderId: 'reminder-1',
+    });
+
+    expect(completions).toHaveLength(2);
+    expect(completions.every((c) => c.reminderId === 'reminder-1')).toBe(true);
+  });
+
+  it('should return empty array if no completions match', async () => {
+    const completions = await listCompletions({
+      startDate: '2026-01-01',
+      endDate: '2026-01-31',
+    });
+
+    expect(completions).toHaveLength(0);
+  });
+
+  it('should handle month boundary correctly', async () => {
+    const completions = await listCompletions({
+      startDate: '2026-02-28',
+      endDate: '2026-03-01',
+    });
+
+    expect(completions).toHaveLength(2);
+    const dates = completions.map((c) => c.date).sort();
+    expect(dates).toEqual(['2026-02-28', '2026-03-01']);
+  });
+});
+
+describe('deleteReminder with completions', () => {
+  it('should not delete completions when reminder is deleted', async () => {
+    // Hatırlatma oluştur
+    const reminder = await createReminder('water', 'Test Su', ['09:00']);
+
+    // Completion ekle
+    const completionId = await addCompletion({
+      date: '2026-11-22',
+      category: 'water',
+      reminderId: reminder.id,
+      source: 'reminder',
+    });
+
+    // Hatırlatmayı sil
+    await deleteReminder(reminder.id);
+
+    // Completion hala var olmalı (yetim reminderId ile)
+    const completion = await db.completions.get(completionId);
+    expect(completion).toBeDefined();
+    expect(completion!.reminderId).toBe(reminder.id);
+
+    // Hatırlatma silinmiş olmalı
+    const deletedReminder = await db.reminders.get(reminder.id);
+    expect(deletedReminder).toBeUndefined();
   });
 });

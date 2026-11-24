@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 const BASE_URL = 'http://localhost:4173';
 
 test.describe('Calendar (.ics)', () => {
-  test('should generate and download demo calendar (Chromium)', async ({ page, browser }, testInfo) => {
+  test('should generate and download demo calendar (Chromium)', async ({ page, browser }) => {
     // Sadece Chromium'da çalış (WebKit download desteği sınırlı)
     if (browser.browserType().name() !== 'chromium') {
       test.skip();

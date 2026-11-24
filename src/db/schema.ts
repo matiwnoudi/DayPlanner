@@ -83,6 +83,22 @@ export interface Checklist {
 }
 
 /**
+ * Hatırlatma tamamlama kaydı
+ *
+ * Kullanıcının bir hatırlatmayı yerine getirdiği kayıt.
+ */
+export interface Completion {
+  id: string; // UUID
+  date: string; // Yerel tarih YYYY-MM-DD
+  category: 'water' | 'meal' | 'supplement' | 'workout';
+  reminderId?: string; // İlişkili hatırlatma (opsiyonel, yetim kalabilir)
+  amount?: number; // Miktar (örn: su miktarı ml)
+  note?: string; // Kullanıcı notu
+  at: string; // ISO 8601 zaman damgası
+  source: 'manual' | 'reminder'; // Kayıt kaynağı
+}
+
+/**
  * Metadata tablosu
  *
  * Uygulama ayarları ve bayraklar (örn. "seedCompleted": "true")
@@ -105,11 +121,12 @@ class DayPlannerDB extends Dexie {
   eventLog!: EntityTable<EventLog, 'id'>;
   checklist!: EntityTable<Checklist, 'id'>;
   meta!: EntityTable<Meta, 'key'>;
+  completions!: EntityTable<Completion, 'id'>;
 
   constructor() {
     super('DayPlannerDB');
 
-    // Şema tanımı - versiyon 1
+    // Şema tanımı - versiyon 1 (başlangıç)
     this.version(1).stores({
       // İndeksler: birincil anahtar kalın, diğerleri virgülle ayrılır
       reminders: 'id, type, enabled',
@@ -117,6 +134,29 @@ class DayPlannerDB extends Dexie {
       eventLog: '++id, ts, type', // ++id: otomatik artan
       checklist: 'id',
       meta: 'key',
+    });
+
+    // Şema tanımı - versiyon 2 (completions tablosu eklendi)
+    this.version(2).stores({
+      reminders: 'id, type, enabled',
+      messages: 'id, reminderId',
+      eventLog: '++id, ts, type',
+      checklist: 'id',
+      meta: 'key',
+      completions: 'id, date, category, reminderId', // Yeni tablo
+    });
+
+    // versionchange: Başka bir sekme veritabanını yükseltiyor
+    // Bağlantıyı kapat ve sayfayı yenile
+    // TODO-VERIFY: iOS Safari'de bu davranış doğrulandı mı?
+    this.on('versionchange', () => {
+      this.close();
+      window.location.reload();
+    });
+
+    // blocked: Yükseltme bloklandı (başka açık bağlantı var)
+    this.on('blocked', () => {
+      console.warn('Database upgrade blocked by another connection. Close other tabs.');
     });
   }
 }

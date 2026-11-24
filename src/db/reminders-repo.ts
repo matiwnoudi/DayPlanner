@@ -5,7 +5,7 @@
  * Tüm işlemler transaction içinde, hata yönetimi ile.
  */
 
-import { db, type Reminder, type Message, type ReminderType } from './schema';
+import { db, type Reminder, type Message, type ReminderType, type Completion } from './schema';
 
 /**
  * Yeni hatırlatma oluşturur
@@ -108,6 +108,9 @@ export async function setEnabled(id: string, enabled: boolean): Promise<void> {
 
 /**
  * Hatırlatma siler (bağlı mesajlarıyla birlikte, tek transaction)
+ *
+ * NOT: Completions tablosu SİLİNMEZ. Geçmiş tamamlama kayıtları korunur,
+ * reminderId yetim kalabilir (kullanıcının geçmiş verisi).
  *
  * @param id - Hatırlatma id
  * @throws Hatırlatma bulunamazsa hata fırlatır
@@ -229,4 +232,129 @@ function validateAndSortTimes(times: string[]): string[] {
 
   // Sırala ve tekilleştir
   return Array.from(new Set(times)).sort();
+}
+
+// ============================================================================
+// COMPLETIONS (Tamamlama kayıtları)
+// ============================================================================
+
+/**
+ * Completion verisi doğrulama
+ */
+function validateCompletionData(data: {
+  date: string;
+  category: string;
+  amount?: number;
+  note?: string;
+  source: string;
+}): void {
+  // Date: YYYY-MM-DD formatı ve geçerli takvim tarihi
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
+    throw new Error('Invalid date format. Expected YYYY-MM-DD.');
+  }
+
+  // Takvim geçerliliği: ISO string ile karşılaştır (normalize olmamalı)
+  const [year, month, day] = data.date.split('-').map(Number);
+  const parsedDate = new Date(year, month - 1, day);
+  const reconstructed = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}-${String(parsedDate.getDate()).padStart(2, '0')}`;
+  
+  if (reconstructed !== data.date || isNaN(parsedDate.getTime())) {
+    throw new Error('Invalid calendar date.');
+  }
+
+  // Category: enum kontrolü
+  const validCategories = ['water', 'meal', 'supplement', 'workout'];
+  if (!validCategories.includes(data.category)) {
+    throw new Error(`Invalid category. Expected one of: ${validCategories.join(', ')}.`);
+  }
+
+  // Amount: >= 0 (opsiyonel)
+  if (data.amount !== undefined) {
+    if (typeof data.amount !== 'number' || data.amount < 0) {
+      throw new Error('Amount must be a non-negative number.');
+    }
+  }
+
+  // Note: en fazla 500 karakter (opsiyonel)
+  if (data.note !== undefined) {
+    if (typeof data.note !== 'string' || data.note.length > 500) {
+      throw new Error('Note must be a string with maximum 500 characters.');
+    }
+  }
+
+  // Source: enum kontrolü
+  const validSources = ['manual', 'reminder'];
+  if (!validSources.includes(data.source)) {
+    throw new Error(`Invalid source. Expected one of: ${validSources.join(', ')}.`);
+  }
+}
+
+/**
+ * Yeni completion kaydı ekle
+ *
+ * @param data - Completion verisi
+ * @returns Promise<string> - Oluşturulan completion ID
+ */
+export async function addCompletion(data: {
+  date: string;
+  category: 'water' | 'meal' | 'supplement' | 'workout';
+  reminderId?: string;
+  amount?: number;
+  note?: string;
+  source: 'manual' | 'reminder';
+  at?: string;
+}): Promise<string> {
+  // Validasyon
+  validateCompletionData(data);
+
+  const id = crypto.randomUUID();
+  const at = data.at || new Date().toISOString();
+
+  const completion: Completion = {
+    id,
+    date: data.date,
+    category: data.category,
+    reminderId: data.reminderId,
+    amount: data.amount,
+    note: data.note,
+    at,
+    source: data.source,
+  };
+
+  await db.completions.add(completion);
+  return id;
+}
+
+/**
+ * Completion kaydını sil
+ *
+ * @param id - Completion ID
+ */
+export async function deleteCompletion(id: string): Promise<void> {
+  await db.completions.delete(id);
+}
+
+/**
+ * Completion kayıtlarını listele
+ *
+ * @param opts - Filtre seçenekleri
+ * @returns Promise<Completion[]> - Completion listesi
+ */
+export async function listCompletions(opts: {
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD (dahil)
+  category?: 'water' | 'meal' | 'supplement' | 'workout';
+  reminderId?: string;
+}): Promise<Completion[]> {
+  let query = db.completions.where('date').between(opts.startDate, opts.endDate, true, true);
+
+  if (opts.category) {
+    query = query.and((c) => c.category === opts.category);
+  }
+
+  if (opts.reminderId) {
+    query = query.and((c) => c.reminderId === opts.reminderId);
+  }
+
+  return await query.toArray();
 }

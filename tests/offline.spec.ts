@@ -159,6 +159,44 @@ test.describe('Offline functionality', () => {
 });
 
 test.describe('IndexedDB Persistence', () => {
+  test('should use correct Dexie version and native version', async ({ page }) => {
+    await page.goto(BASE_URL);
+
+    // SW aktif olana kadar bekle
+    await page.waitForFunction(
+      () => navigator.serviceWorker.controller !== null,
+      { timeout: 15000 }
+    );
+
+    // Dexie ve IndexedDB versiyonlarını kontrol et
+    const versions = await page.evaluate(async () => {
+      // db instance'ı window'da mevcut olmalı (main.tsx'te attach edilmiş)
+      // Yoksa direkt IndexedDB'den çek
+      const dbList = await indexedDB.databases();
+      const dayPlannerDb = dbList.find((dbInfo) => dbInfo.name === 'DayPlannerDB');
+      const nativeVersion = dayPlannerDb?.version ?? null;
+
+      // Dexie version'ı db.verno property'sinden al
+      // window.db global değilse, veritabanını aç ve version'ı oku
+      return new Promise<{ nativeVersion: number | null; dexieVersion: number }>((resolve) => {
+        const request = indexedDB.open('DayPlannerDB');
+        request.onsuccess = () => {
+          const db = request.result;
+          // Dexie verno = native version / 10
+          const dexieVersion = Math.floor((nativeVersion ?? 0) / 10);
+          db.close();
+          resolve({ nativeVersion, dexieVersion });
+        };
+      });
+    });
+
+    console.log(`IndexedDB versions: native=${versions.nativeVersion}, Dexie=${versions.dexieVersion}`);
+
+    // Dexie version(2) → native version 20
+    expect(versions.dexieVersion).toBe(2);
+    expect(versions.nativeVersion).toBe(20);
+  });
+
   test('should seed database and show 3 reminders on first load', async ({ browser }) => {
     // Yeni browser context (taze tarayıcı)
     const context = await browser.newContext();

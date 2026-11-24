@@ -78,6 +78,27 @@ Bu adımda iPhone veya Safari’ye özel bir davranış varsayılmadı.
 - **Önemli**: İlk kurulumda seed EKLEME yapar, mevcut verileri SİLMEZ
 
 
+## IndexedDB Dexie Version Change Events
+
+### versionchange ve blocked Event Davranışı
+- Dexie `db.on('versionchange')` ve `db.on('blocked')` event handler'ları eklendi
+- **versionchange**: Başka bir tab/pencerede DB version upgrade çalışıyorsa tetiklenir → `db.close()` + `location.reload()`
+- **blocked**: Mevcut bağlantılar açıkken upgrade bloke olursa tetiklenir → `console.warn()`
+- **iOS Safari standalone modda test edilmedi**: 
+  - Birden fazla tab standalone PWA'da açılabiliyor mu? → **TODO-VERIFY**
+  - versionchange eventi iOS'ta çalışıyor mu? → **TODO-VERIFY**
+  - blocked eventi iOS'ta çalışıyor mu? → **TODO-VERIFY**
+- Masaüstü Chrome'da teorik olarak çalışması gerekiyor, pratikte birden fazla tab senaryosu test edilmedi
+- Kaynak: [Dexie Version Handling](https://dexie.org/docs/Tutorial/Design#database-versioning), [MDN IDBDatabase versionchange](https://developer.mozilla.org/en-US/docs/Web/API/IDBDatabase/versionchange_event)
+- Kod referansı: `src/db/schema.ts` - constructor'da event listener'lar
+
+### Completions Tablosu Orphan reminderId
+- Hatırlatma silindiğinde completions tablosundaki ilgili kayıtlar SİLİNMEZ (orphan reminderId)
+- Amaç: Kullanıcının geçmiş completion geçmişini korumak
+- `deleteReminder()` sadece reminders, messages, checklist tablosundan cascade delete yapar
+- Kod referansı: `src/db/reminders-repo.ts` - deleteReminder() içinde yorum
+
+
 ## Açılış Ağ İsteği (Doğrulanmadı)
 
 ### Service Worker Güncelleme Kontrolü

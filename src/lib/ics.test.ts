@@ -305,6 +305,7 @@ describe('buildIcs', () => {
     expect(firstEvent.getFirstPropertyValue('description')).toBe('Bir bardak su iç');
 
     // VALARM kontrolü
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vevents.forEach((vevent: any) => {
       const valarms = vevent.getAllSubcomponents('valarm');
       expect(valarms).toHaveLength(1);
